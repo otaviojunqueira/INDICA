@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { User } from '../models';
+import { ApiError } from '../utils/errorHandler';
 
 dotenv.config();
 
@@ -25,29 +27,36 @@ declare global {
   }
 }
 
-// Middleware para verificar se o usuário está autenticado
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+// Middleware de autenticação
+const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Obter o token do cabeçalho Authorization
+    // Verificar se o token existe no cabeçalho
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Token de autenticação não fornecido' });
+      throw new ApiError(401, 'Token de autenticação não fornecido');
     }
 
     // Extrair o token
     const token = authHeader.split(' ')[1];
 
     // Verificar e decodificar o token
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key_default');
 
-    // Adicionar o ID do usuário e o papel ao objeto de requisição
-    (req as any).userId = decoded.id;
-    (req as any).userRole = decoded.role;
+    // Verificar se o token é válido e obter o usuário
+    const user = await User.findById((decoded as any).id).select('-password');
+    if (!user) {
+      throw new ApiError(401, 'Usuário não encontrado');
+    }
+
+    // Adicionar o usuário à requisição
+    req.user = user;
 
     next();
   } catch (error) {
-    console.error('Erro de autenticação:', error);
-    return res.status(401).json({ message: 'Token inválido ou expirado' });
+    if (error instanceof jwt.JsonWebTokenError) {
+      return next(new ApiError(401, 'Token inválido ou expirado'));
+    }
+    next(error);
   }
 };
 
@@ -87,10 +96,4 @@ export const isAgent = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-export default {
-  authenticate,
-  authorize,
-  isAdmin,
-  isEvaluator,
-  isAgent
-}; 
+export default authMiddleware; 

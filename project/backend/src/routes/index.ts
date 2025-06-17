@@ -1,19 +1,29 @@
-import express from 'express';
+import { Router } from 'express';
 import userRoutes from './user.routes';
-import authRoutes from './auth.routes';
-import entityRoutes from './entity.routes';
 import noticeRoutes from './notice.routes';
+import culturalGroupRoutes from './culturalGroup.routes';
+import authRoutes from './auth.routes';
 import applicationRoutes from './application.routes';
-import evaluationRoutes from './evaluation.routes';
+import agentProfileRoutes from './agentProfile.routes';
 
-const router = express.Router();
+const router = Router();
 
-// Definir rotas
-router.use('/users', userRoutes);
+// Rotas de autenticação
 router.use('/auth', authRoutes);
-router.use('/entities', entityRoutes);
+
+// Rotas de usuário
+router.use('/users', userRoutes);
+
+// Rotas de editais
 router.use('/notices', noticeRoutes);
+
+// Rotas de inscrições
 router.use('/applications', applicationRoutes);
-router.use('/evaluations', evaluationRoutes);
+
+// Rotas de perfil do agente cultural
+router.use('/agent-profile', agentProfileRoutes);
+
+// Rotas de coletivos culturais
+router.use('/cultural-groups', culturalGroupRoutes);
 
 export default router; 

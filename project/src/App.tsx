@@ -14,7 +14,10 @@ import { ApplicationForm } from './pages/ApplicationForm';
 import { ApplicationsPage } from './pages/ApplicationsPage';
 import { ApplicationDetail } from './pages/ApplicationDetail';
 import { ReportsPage } from './pages/ReportsPage';
+import { AgentProfilePage } from './pages/AgentProfile';
+import { CulturalGroupPage } from './pages/CulturalGroup';
 import { useAuthStore } from './store/authStore';
+import { AuthProvider } from './auth';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,76 +48,86 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-white">
-        <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-        
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route 
-              path="/login" 
-              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} 
-            />
-            <Route 
-              path="/register" 
-              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} 
-            />
-            <Route 
-              path="/forgot-password" 
-              element={isAuthenticated ? <Navigate to="/dashboard" /> : <ForgotPassword />} 
-            />
-            <Route 
-              path="/dashboard" 
-              element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
-            />
-            <Route path="/notices" element={<NoticesPage />} />
-            <Route path="/notices/:id" element={<NoticeDetail />} />
-            <Route 
-              path="/notices/:id/apply" 
-              element={isAuthenticated ? <ApplicationForm /> : <Navigate to="/login" />} 
-            />
-            <Route 
-              path="/applications" 
-              element={isAuthenticated ? <ApplicationsPage /> : <Navigate to="/login" />} 
-            />
-            <Route 
-              path="/applications/:id" 
-              element={isAuthenticated ? <ApplicationDetail /> : <Navigate to="/login" />} 
-            />
-            <Route 
-              path="/reports" 
-              element={isAuthenticated ? <ReportsPage /> : <Navigate to="/login" />} 
-            />
-          </Routes>
-        </main>
+      <AuthProvider>
+        <div className="min-h-screen bg-white">
+          <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+          
+          <main>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route 
+                path="/login" 
+                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} 
+              />
+              <Route 
+                path="/register" 
+                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} 
+              />
+              <Route 
+                path="/forgot-password" 
+                element={isAuthenticated ? <Navigate to="/dashboard" /> : <ForgotPassword />} 
+              />
+              <Route 
+                path="/dashboard" 
+                element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
+              />
+              <Route path="/notices" element={<NoticesPage />} />
+              <Route path="/notices/:id" element={<NoticeDetail />} />
+              <Route 
+                path="/notices/:id/apply" 
+                element={isAuthenticated ? <ApplicationForm /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/applications" 
+                element={isAuthenticated ? <ApplicationsPage /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/applications/:id" 
+                element={isAuthenticated ? <ApplicationDetail /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/reports" 
+                element={isAuthenticated ? <ReportsPage /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/profile" 
+                element={isAuthenticated ? <AgentProfilePage /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/cultural-group" 
+                element={isAuthenticated ? <CulturalGroupPage /> : <Navigate to="/login" />} 
+              />
+            </Routes>
+          </main>
 
-        <Footer />
-        
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#10B981',
-                secondary: '#fff',
-              },
-            },
-            error: {
+          <Footer />
+          
+          <Toaster
+            position="top-right"
+            toastOptions={{
               duration: 4000,
-              iconTheme: {
-                primary: '#EF4444',
-                secondary: '#fff',
+              style: {
+                background: '#363636',
+                color: '#fff',
               },
-            },
-          }}
-        />
-      </div>
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
+        </div>
+      </AuthProvider>
     </Router>
   );
 }

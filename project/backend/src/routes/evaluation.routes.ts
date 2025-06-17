@@ -1,6 +1,6 @@
 import express from 'express';
 import { evaluationController } from '../controllers/evaluation.controller';
-import { authenticate, isAdmin, isEvaluator } from '../middleware/auth.middleware';
+import authMiddleware, { isEvaluator, isAdmin } from '../middleware/auth.middleware';
 import { body } from 'express-validator';
 
 const router = express.Router();
@@ -24,13 +24,13 @@ const validateAssignEvaluators = [
 ];
 
 // Rotas para avaliadores
-router.post('/', authenticate, isEvaluator, validateCreateEvaluation, evaluationController.create);
-router.get('/my-evaluations', authenticate, isEvaluator, evaluationController.listEvaluatorEvaluations);
-router.get('/:id', authenticate, isEvaluator, evaluationController.getEvaluation);
-router.put('/:id', authenticate, isEvaluator, validateUpdateEvaluation, evaluationController.update);
+router.post('/', authMiddleware, isEvaluator, validateCreateEvaluation, evaluationController.create);
+router.get('/my-evaluations', authMiddleware, isEvaluator, evaluationController.listEvaluatorEvaluations);
+router.get('/:id', authMiddleware, isEvaluator, evaluationController.getEvaluation);
+router.put('/:id', authMiddleware, isEvaluator, validateUpdateEvaluation, evaluationController.update);
 
 // Rotas para administradores
-router.get('/application/:applicationId', authenticate, isAdmin, evaluationController.listApplicationEvaluations);
-router.post('/application/:applicationId/assign', authenticate, isAdmin, validateAssignEvaluators, evaluationController.assignEvaluators);
+router.get('/application/:applicationId', authMiddleware, isAdmin, evaluationController.listApplicationEvaluations);
+router.post('/application/:applicationId/assign', authMiddleware, isAdmin, validateAssignEvaluators, evaluationController.assignEvaluators);
 
 export default router; 

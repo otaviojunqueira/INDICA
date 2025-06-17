@@ -5,6 +5,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
+import { useAuth } from '../auth';
 import { Button } from '../components/UI/Button';
 import { Card } from '../components/UI/Card';
 
@@ -17,12 +18,23 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
+  const { signIn } = useAuth();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
     try {
+      // Tenta fazer login com o store principal
       await login(data.cpfCnpj, data.password);
+      
+      // Tenta fazer login também com o contexto de autenticação
+      try {
+        await signIn(data.cpfCnpj, data.password);
+      } catch (authError) {
+        console.warn('Erro no login secundário:', authError);
+        // Continua mesmo se falhar o login secundário
+      }
+      
       toast.success('Login realizado com sucesso!');
       navigate('/dashboard');
     } catch (error) {

@@ -1,6 +1,6 @@
 import express from 'express';
 import { applicationController } from '../controllers/application.controller';
-import { authenticate, isAdmin, isAgent } from '../middleware/auth.middleware';
+import authMiddleware, { isAgent, isAdmin } from '../middleware/auth.middleware';
 import { body } from 'express-validator';
 
 const router = express.Router();
@@ -14,13 +14,13 @@ const validateApplication = [
 ];
 
 // Rotas para agentes culturais
-router.post('/', authenticate, isAgent, validateApplication, applicationController.create);
-router.get('/my-applications', authenticate, applicationController.listUserApplications);
-router.get('/:id', authenticate, applicationController.getApplication);
-router.put('/:id', authenticate, validateApplication, applicationController.update);
-router.patch('/:id/submit', authenticate, applicationController.submit);
+router.post('/', authMiddleware, isAgent, validateApplication, applicationController.create);
+router.get('/my-applications', authMiddleware, applicationController.listUserApplications);
+router.get('/:id', authMiddleware, applicationController.getApplication);
+router.put('/:id', authMiddleware, validateApplication, applicationController.update);
+router.patch('/:id/submit', authMiddleware, applicationController.submit);
 
 // Rotas de administrador
-router.get('/', authenticate, isAdmin, applicationController.listAll);
+router.get('/', authMiddleware, isAdmin, applicationController.listAll);
 
 export default router; 

@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import * as entityController from '../controllers/entity.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
+import authMiddleware, { authorize } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
@@ -33,7 +33,7 @@ router.get('/:id', entityIdValidation, entityController.getEntityById);
 // Rotas protegidas (requer autenticação e autorização)
 router.post(
   '/',
-  authenticate,
+  authMiddleware,
   authorize(['admin']),
   entityValidation,
   entityController.createEntity
@@ -41,7 +41,7 @@ router.post(
 
 router.put(
   '/:id',
-  authenticate,
+  authMiddleware,
   authorize(['admin']),
   entityIdValidation,
   entityValidation,
@@ -50,7 +50,7 @@ router.put(
 
 router.delete(
   '/:id',
-  authenticate,
+  authMiddleware,
   authorize(['admin']),
   entityIdValidation,
   entityController.deleteEntity

@@ -1,7 +1,7 @@
 import express from 'express';
 import { body } from 'express-validator';
 import * as authController from '../controllers/auth.controller';
-import { authenticate } from '../middleware/auth.middleware';
+import authMiddleware from '../middleware/auth.middleware';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -46,7 +46,7 @@ router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
 
 // Rotas protegidas (requer autenticação)
-router.get('/profile', authenticate, authController.getProfile);
-router.put('/password', authenticate, updatePasswordValidation, authController.updatePassword);
+router.get('/profile', authMiddleware, authController.getProfile);
+router.put('/password', authMiddleware, updatePasswordValidation, authController.updatePassword);
 
 export default router; 

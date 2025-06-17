@@ -23,6 +23,8 @@ export const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => 
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Editais', href: '/notices' },
     { name: 'Inscrições', href: '/applications' },
+    { name: 'Meu Perfil', href: '/profile' },
+    { name: 'Coletivo Cultural', href: '/cultural-group' },
     { name: 'Relatórios', href: '/reports' },
   ];
 

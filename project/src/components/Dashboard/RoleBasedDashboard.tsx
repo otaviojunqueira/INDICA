@@ -3,11 +3,9 @@ import {
   FileText, 
   Users, 
   Award, 
-  DollarSign,
   Calendar,
   CheckCircle,
   Clock,
-  AlertCircle,
   Settings,
   BarChart3,
   PieChart
