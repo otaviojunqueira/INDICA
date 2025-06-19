@@ -5,9 +5,9 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { useAuth } from '../auth';
 import { Button } from '../components/UI/Button';
 import { Card } from '../components/UI/Card';
+import { api } from '../config/axios';
 
 interface LoginForm {
   cpfCnpj: string;
@@ -18,26 +18,39 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
-  const { signIn } = useAuth();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      // Tenta fazer login com o store principal
+      console.log('Iniciando login com:', {
+        cpfCnpj: data.cpfCnpj,
+        password: data.password.substring(0, 3) + '...'
+      });
+      
+      // Remove qualquer token antigo
+      localStorage.removeItem('auth_token');
+      
+      // Tenta fazer login
       await login(data.cpfCnpj, data.password);
       
-      // Tenta fazer login também com o contexto de autenticação
-      try {
-        await signIn(data.cpfCnpj, data.password);
-      } catch (authError) {
-        console.warn('Erro no login secundário:', authError);
-        // Continua mesmo se falhar o login secundário
+      // Verifica se o token foi salvo corretamente
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.error('Login feito, mas o token não foi armazenado');
+        toast.error('Erro de autenticação. Tente novamente.');
+        return;
       }
       
+      // Configura o token para o Axios
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log('Token configurado:', token.substring(0, 15) + '...');
+      
+      // Mensagem de sucesso
       toast.success('Login realizado com sucesso!');
       navigate('/dashboard');
     } catch (error) {
+      console.error('Erro durante o login:', error);
       toast.error('Erro ao fazer login. Verifique suas credenciais.');
     }
   };

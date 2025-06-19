@@ -36,6 +36,18 @@ export const API_ENDPOINTS = {
   EVALUATIONS: {
     BASE: `${API_URL}/evaluations`,
   },
+
+  // Perfil do Agente Cultural
+  AGENT_PROFILE: {
+    BASE: `${API_URL}/agent-profile`,
+    PUBLIC: `${API_URL}/agent-profile/public`,
+    USER: `${API_URL}/agent-profile/user`,
+  },
+
+  // Coletivos Culturais
+  CULTURAL_GROUPS: {
+    BASE: `${API_URL}/cultural-groups`,
+  },
 };
 
 export default API_ENDPOINTS; 

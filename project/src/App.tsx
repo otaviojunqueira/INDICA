@@ -1,134 +1,128 @@
+import { BrowserRouter as Router } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { Header } from './components/Layout/Header';
-import { Footer } from './components/Layout/Footer';
-import { Home } from './pages/Home';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { Dashboard } from './pages/Dashboard';
-import { NoticesPage } from './pages/NoticesPage';
-import { NoticeDetail } from './pages/NoticeDetail';
-import { ApplicationForm } from './pages/ApplicationForm';
-import { ApplicationsPage } from './pages/ApplicationsPage';
-import { ApplicationDetail } from './pages/ApplicationDetail';
-import { ReportsPage } from './pages/ReportsPage';
-import { AgentProfilePage } from './pages/AgentProfile';
-import { CulturalGroupPage } from './pages/CulturalGroup';
 import { useAuthStore } from './store/authStore';
-import { AuthProvider } from './auth';
+import { AppRoutes } from './routes';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ptBR } from '@mui/material/locale';
+import { Header } from './components/Layout/Header';
+import { Toaster } from 'react-hot-toast';
+import { Footer } from './components/Layout/Footer';
+
+// Inicializar a configuração do axios
+import './config/axios';
+
+// Tema personalizado para o sistema INDICA
+const theme = createTheme(
+  {
+    palette: {
+      primary: {
+        main: '#1976d2',
+        light: '#42a5f5',
+        dark: '#1565c0',
+      },
+      secondary: {
+        main: '#FF7043',
+        light: '#FF8A65',
+        dark: '#E64A19',
+      },
+      background: {
+        default: '#f5f5f5',
+      },
+    },
+    typography: {
+      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+      h1: {
+        fontWeight: 700,
+      },
+      h2: {
+        fontWeight: 600,
+      },
+      h3: {
+        fontWeight: 600,
+      },
+      h4: {
+        fontWeight: 600,
+      },
+      h5: {
+        fontWeight: 600,
+      },
+      h6: {
+        fontWeight: 600,
+      },
+    },
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            textTransform: 'none',
+            fontWeight: 500,
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+            boxShadow: '0 4px 12px 0 rgba(0,0,0,0.05)',
+          },
+        },
+      },
+    },
+  },
+  ptBR // Adiciona localização em português
+);
 
 function App() {
+  const { checkAuth } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated, checkAuth } = useAuthStore();
 
-  // Verificar autenticação ao carregar a aplicação
+  // Verificar autenticação ao iniciar
   useEffect(() => {
-    const verifyAuth = async () => {
-      await checkAuth();
-      setIsLoading(false);
-    };
-    
-    verifyAuth();
+    checkAuth();
   }, [checkAuth]);
 
-  // Mostrar estado de carregamento enquanto verifica a autenticação
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
     <Router>
-      <AuthProvider>
-        <div className="min-h-screen bg-white">
-          <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-          
-          <main>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route 
-                path="/login" 
-                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} 
-              />
-              <Route 
-                path="/register" 
-                element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} 
-              />
-              <Route 
-                path="/forgot-password" 
-                element={isAuthenticated ? <Navigate to="/dashboard" /> : <ForgotPassword />} 
-              />
-              <Route 
-                path="/dashboard" 
-                element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
-              />
-              <Route path="/notices" element={<NoticesPage />} />
-              <Route path="/notices/:id" element={<NoticeDetail />} />
-              <Route 
-                path="/notices/:id/apply" 
-                element={isAuthenticated ? <ApplicationForm /> : <Navigate to="/login" />} 
-              />
-              <Route 
-                path="/applications" 
-                element={isAuthenticated ? <ApplicationsPage /> : <Navigate to="/login" />} 
-              />
-              <Route 
-                path="/applications/:id" 
-                element={isAuthenticated ? <ApplicationDetail /> : <Navigate to="/login" />} 
-              />
-              <Route 
-                path="/reports" 
-                element={isAuthenticated ? <ReportsPage /> : <Navigate to="/login" />} 
-              />
-              <Route 
-                path="/profile" 
-                element={isAuthenticated ? <AgentProfilePage /> : <Navigate to="/login" />} 
-              />
-              <Route 
-                path="/cultural-group" 
-                element={isAuthenticated ? <CulturalGroupPage /> : <Navigate to="/login" />} 
-              />
-            </Routes>
-          </main>
+      <div className="min-h-screen bg-white">
+        <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+        
+        <main>
+            <AppRoutes />
+        </main>
 
-          <Footer />
-          
-          <Toaster
-            position="top-right"
-            toastOptions={{
+        <Footer />
+        
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10B981',
+                secondary: '#fff',
+              },
+            },
+            error: {
               duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: '#fff',
               },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: '#10B981',
-                  secondary: '#fff',
-                },
-              },
-              error: {
-                duration: 4000,
-                iconTheme: {
-                  primary: '#EF4444',
-                  secondary: '#fff',
-                },
-              },
-            }}
-          />
-        </div>
-      </AuthProvider>
+            },
+          }}
+        />
+      </div>
     </Router>
+    </ThemeProvider>
   );
 }
 

@@ -1,438 +1,888 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
-import { ChevronLeft, Save, Upload, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Paper,
+  Button,
+  TextField,
+  MenuItem,
+  Divider,
+  Stepper,
+  Step,
+  StepLabel,
+  Alert,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
+  Checkbox,
+  CircularProgress,
+  InputAdornment
+} from '@mui/material';
+import { FileUpload } from '../components/Upload/FileUpload';
 import { useAuthStore } from '../store/authStore';
-import toast from 'react-hot-toast';
+import { mockNotices as notices } from '../mocks/data';
+import { Notice } from '../types';
 
-// Tipos simulados (serão substituídos pelos reais da API)
-interface Notice {
-  id: string;
+// Passos do formulário
+const steps = [
+  'Informações Básicas',
+  'Descrição do Projeto',
+  'Orçamento',
+  'Documentos',
+  'Revisão'
+];
+
+// Interface para dados do formulário
+interface FormData {
   title: string;
-  entityName: string;
-  category: string;
-  fields: FormField[];
+  description: string;
+  objectives: string;
+  targetAudience: string;
+  methodology: string;
+  timeline: string;
+  expectedResults: string;
+  requestedValue: number;
+  counterpart: number;
+  justification: string;
+  budget: BudgetItem[];
+  team: TeamMember[];
+  documents: File[];
+  termsAccepted: boolean;
 }
 
-interface FormField {
+// Interfaces para itens de orçamento e membros da equipe
+interface BudgetItem {
   id: string;
-  label: string;
-  type: 'text' | 'textarea' | 'number' | 'date' | 'select' | 'file';
-  required: boolean;
-  options?: string[];
-  validation?: {
-    min?: number;
-    max?: number;
-    pattern?: string;
-  };
+  description: string;
+  quantity: number;
+  unitValue: number;
+  totalValue: number;
+  category: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  experience: string;
 }
 
 export const ApplicationForm: React.FC = () => {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [searchParams] = useSearchParams();
+  const editalId = searchParams.get('editalId');
+  const { user, isAuthenticated } = useAuthStore();
+  
+  // Estados
+  const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const { user, isAuthenticated } = useAuthStore();
-  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    description: '',
+    objectives: '',
+    targetAudience: '',
+    methodology: '',
+    timeline: '',
+    expectedResults: '',
+    requestedValue: 0,
+    counterpart: 0,
+    justification: '',
+    budget: [],
+    team: [],
+    documents: [],
+    termsAccepted: false
+  });
   
-  const { register, handleSubmit, control, formState: { errors } } = useForm();
+  const isEditMode = !!id;
 
-  // Efeito para carregar o edital
+  // Carregar dados do edital e da inscrição (se em modo de edição)
   useEffect(() => {
-    if (!isAuthenticated) {
-      toast.error('Você precisa estar logado para se inscrever.');
-      navigate('/login');
-      return;
-    }
-
-    // Simulação de chamada à API
-    const fetchNotice = async () => {
+    const loadData = async () => {
       setLoading(true);
       try {
-        // Em produção, substituir por chamada real à API
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Carregar dados do edital
+        if (editalId) {
+          const foundNotice = notices.find(n => n.id === editalId);
+          if (foundNotice) {
+            setNotice(foundNotice);
+          } else {
+            setError('Edital não encontrado');
+          }
+        }
         
-        // Dados simulados
-        const mockNotice: Notice = {
-          id: id || '1',
-          title: 'Edital de Apoio à Cultura 2024',
-          entityName: 'Secretaria de Cultura do Estado',
-          category: 'Música',
-          fields: [
-            {
-              id: 'projectTitle',
-              label: 'Título do Projeto',
-              type: 'text',
-              required: true,
-            },
-            {
-              id: 'projectDescription',
-              label: 'Descrição do Projeto',
-              type: 'textarea',
-              required: true,
-            },
-            {
-              id: 'targetAudience',
-              label: 'Público-alvo',
-              type: 'text',
-              required: true,
-            },
-            {
-              id: 'expectedResult',
-              label: 'Resultados Esperados',
-              type: 'textarea',
-              required: true,
-            },
-            {
-              id: 'executionPeriod',
-              label: 'Período de Execução (em meses)',
-              type: 'number',
-              required: true,
-              validation: {
-                min: 1,
-                max: 24,
+        // Carregar dados da inscrição em caso de edição
+        if (isEditMode) {
+          // Simulação de chamada à API
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // Dados simulados de uma inscrição
+          setFormData({
+            title: 'Projeto Cultural Exemplo',
+            description: 'Descrição detalhada do projeto cultural',
+            objectives: 'Promover a cultura local através de eventos e oficinas',
+            targetAudience: 'Comunidade em geral, com foco em jovens',
+            methodology: 'Abordagem participativa com atividades interativas',
+            timeline: 'Duração de 6 meses, com atividades semanais',
+            expectedResults: 'Impacto cultural na comunidade e formação de agentes culturais',
+            requestedValue: 45000,
+            counterpart: 5000,
+            justification: 'Necessidade de fomento para desenvolvimento cultural local',
+            budget: [
+              {
+                id: '1',
+                description: 'Equipamento de som',
+                quantity: 1,
+                unitValue: 5000,
+                totalValue: 5000,
+                category: 'Equipamentos'
               },
-            },
-            {
-              id: 'requestedAmount',
-              label: 'Valor Solicitado (R$)',
-              type: 'number',
-              required: true,
-              validation: {
-                min: 1000,
-                max: 100000,
+              {
+                id: '2',
+                description: 'Contratação de oficineiros',
+                quantity: 10,
+                unitValue: 2000,
+                totalValue: 20000,
+                category: 'Serviços'
+              }
+            ],
+            team: [
+              {
+                id: '1',
+                name: 'João Silva',
+                role: 'Coordenador',
+                experience: '10 anos de experiência em produção cultural'
               },
-            },
-            {
-              id: 'culturalArea',
-              label: 'Área Cultural',
-              type: 'select',
-              required: true,
-              options: ['Música', 'Teatro', 'Dança', 'Artes Visuais', 'Literatura', 'Audiovisual', 'Patrimônio', 'Outros'],
-            },
-            {
-              id: 'portfolio',
-              label: 'Portfólio (PDF)',
-              type: 'file',
-              required: true,
-            },
-            {
-              id: 'budget',
-              label: 'Planilha Orçamentária (XLSX)',
-              type: 'file',
-              required: true,
-            },
-            {
-              id: 'documents',
-              label: 'Documentos Comprobatórios (ZIP)',
-              type: 'file',
-              required: true,
-            },
-          ],
-        };
-
-        setNotice(mockNotice);
+              {
+                id: '2',
+                name: 'Maria Oliveira',
+                role: 'Produtora',
+                experience: '5 anos de experiência em projetos culturais'
+              }
+            ],
+            documents: [],
+            termsAccepted: true
+          });
+        }
       } catch (error) {
-        console.error('Erro ao carregar edital:', error);
-        toast.error('Erro ao carregar informações do edital.');
+        console.error('Erro ao carregar dados:', error);
+        setError('Ocorreu um erro ao carregar os dados.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchNotice();
-  }, [id, isAuthenticated, navigate]);
+    loadData();
+  }, [id, isEditMode, editalId]);
 
-  // Função para lidar com o envio do formulário
-  const onSubmit = async (data: any) => {
+  // Verificar autenticação
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Manipuladores de eventos
+  const handleNext = () => {
+    if (validateCurrentStep()) {
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: parseFloat(value) || 0
+    }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
+  // Adicionar item de orçamento
+  const addBudgetItem = () => {
+    const newItem: BudgetItem = {
+      id: Date.now().toString(),
+      description: '',
+      quantity: 1,
+      unitValue: 0,
+      totalValue: 0,
+      category: 'Serviços'
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      budget: [...prev.budget, newItem]
+    }));
+  };
+
+  // Atualizar item de orçamento
+  const updateBudgetItem = (id: string, field: keyof BudgetItem, value: any) => {
+    setFormData(prev => {
+      const updatedBudget = prev.budget.map(item => {
+        if (item.id === id) {
+          const updatedItem = { ...item, [field]: value };
+          
+          // Recalcular o valor total se quantidade ou valor unitário mudar
+          if (field === 'quantity' || field === 'unitValue') {
+            updatedItem.totalValue = updatedItem.quantity * updatedItem.unitValue;
+          }
+          
+          return updatedItem;
+        }
+        return item;
+      });
+      
+      return { ...prev, budget: updatedBudget };
+    });
+  };
+
+  // Remover item de orçamento
+  const removeBudgetItem = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      budget: prev.budget.filter(item => item.id !== id)
+    }));
+  };
+
+  // Adicionar membro da equipe
+  const addTeamMember = () => {
+    const newMember: TeamMember = {
+      id: Date.now().toString(),
+      name: '',
+      role: '',
+      experience: ''
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      team: [...prev.team, newMember]
+    }));
+  };
+
+  // Atualizar membro da equipe
+  const updateTeamMember = (id: string, field: keyof TeamMember, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      team: prev.team.map(member => 
+        member.id === id ? { ...member, [field]: value } : member
+      )
+    }));
+  };
+
+  // Remover membro da equipe
+  const removeTeamMember = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      team: prev.team.filter(member => member.id !== id)
+    }));
+  };
+
+  // Adicionar documentos
+  const handleFileUpload = (files: File[]) => {
+    setFormData(prev => ({
+      ...prev,
+      documents: [...prev.documents, ...files]
+    }));
+  };
+
+  // Remover documento
+  const removeDocument = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Calcular valor total do orçamento
+  const calculateTotalBudget = () => {
+    return formData.budget.reduce((sum, item) => sum + item.totalValue, 0);
+  };
+
+  // Validar etapa atual
+  const validateCurrentStep = () => {
+    switch (activeStep) {
+      case 0: // Informações Básicas
+        if (!formData.title || !formData.description) {
+          setError('Preencha todos os campos obrigatórios.');
+          return false;
+        }
+        setError(null);
+        return true;
+        
+      case 1: // Descrição do Projeto
+        if (!formData.objectives || !formData.methodology || !formData.expectedResults) {
+          setError('Preencha todos os campos obrigatórios.');
+          return false;
+        }
+        setError(null);
+        return true;
+        
+      case 2: // Orçamento
+        if (formData.budget.length === 0) {
+          setError('Adicione pelo menos um item ao orçamento.');
+          return false;
+        }
+        
+        if (formData.budget.some(item => !item.description || item.totalValue <= 0)) {
+          setError('Todos os itens do orçamento devem ter descrição e valor válido.');
+          return false;
+        }
+        
+        const totalBudget = calculateTotalBudget();
+        if (notice && notice.maxValue && totalBudget > notice.maxValue) {
+          setError(`O valor total do orçamento não pode exceder ${notice.maxValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}.`);
+          return false;
+        }
+        
+        setError(null);
+        return true;
+        
+      case 3: // Documentos
+        if (formData.documents.length === 0) {
+          setError('Anexe pelo menos um documento.');
+          return false;
+        }
+        setError(null);
+        return true;
+        
+      case 4: // Revisão
+        if (!formData.termsAccepted) {
+          setError('Você precisa aceitar os termos e condições.');
+          return false;
+        }
+        setError(null);
+        return true;
+        
+      default:
+        return true;
+    }
+  };
+
+  // Enviar formulário
+  const handleSubmit = async () => {
+    if (!validateCurrentStep()) {
+      return;
+    }
+    
     setSubmitting(true);
     try {
-      // Em produção, substituir por chamada real à API
+      // Simulação de chamada à API
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('Dados enviados:', data);
-      toast.success('Inscrição enviada com sucesso!');
+      // Simulação de sucesso
+      setSuccess(true);
+      
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
       navigate('/applications');
+      }, 2000);
     } catch (error) {
-      console.error('Erro ao enviar inscrição:', error);
-      toast.error('Erro ao enviar inscrição. Tente novamente.');
+      console.error('Erro ao enviar formulário:', error);
+      setError('Ocorreu um erro ao enviar o formulário. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Função para renderizar os campos do formulário
-  const renderFormField = (field: FormField) => {
-    const fieldError = errors[field.id];
-    
-    switch (field.type) {
-      case 'text':
+  // Renderizar conteúdo de cada etapa
+  const getStepContent = (step: number) => {
+    switch (step) {
+      case 0: // Informações Básicas
         return (
-          <div key={field.id} className="mb-6">
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-              id={field.id}
-              type="text"
-              {...register(field.id, { required: field.required ? `${field.label} é obrigatório` : false })}
-              className={`w-full px-3 py-2 border ${fieldError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            />
-            {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError.message?.toString()}</p>}
-          </div>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                label="Título do Projeto"
+                name="title"
+                value={formData.title}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Nome completo do seu projeto cultural"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                multiline
+                rows={4}
+                label="Descrição do Projeto"
+                name="description"
+                value={formData.description}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Descreva o seu projeto de forma resumida (até 500 caracteres)"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Justificativa"
+                name="justification"
+                value={formData.justification}
+                onChange={handleTextChange}
+                variant="outlined"
+                multiline
+                rows={4}
+                helperText="Por que este projeto é importante e relevante?"
+              />
+            </Grid>
+          </Grid>
         );
         
-      case 'textarea':
+      case 1: // Descrição do Projeto
         return (
-          <div key={field.id} className="mb-6">
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <textarea
-              id={field.id}
-              rows={5}
-              {...register(field.id, { required: field.required ? `${field.label} é obrigatório` : false })}
-              className={`w-full px-3 py-2 border ${fieldError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            />
-            {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError.message?.toString()}</p>}
-          </div>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                multiline
+                rows={3}
+                label="Objetivos"
+                name="objectives"
+                value={formData.objectives}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Descreva os objetivos gerais e específicos do projeto"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Público-alvo"
+                name="targetAudience"
+                value={formData.targetAudience}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Quem são as pessoas que serão beneficiadas pelo projeto"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                multiline
+                rows={3}
+                label="Metodologia"
+                name="methodology"
+                value={formData.methodology}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Como o projeto será executado, incluindo abordagens e processos"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Cronograma"
+                name="timeline"
+                value={formData.timeline}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Descrição do cronograma de execução do projeto"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                multiline
+                rows={3}
+                label="Resultados Esperados"
+                name="expectedResults"
+                value={formData.expectedResults}
+                onChange={handleTextChange}
+                variant="outlined"
+                helperText="Descreva os impactos e resultados esperados do projeto"
+              />
+            </Grid>
+          </Grid>
         );
         
-      case 'number':
+      case 2: // Orçamento
         return (
-          <div key={field.id} className="mb-6">
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-              id={field.id}
+          <Box>
+            <Grid container spacing={3} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Valor Solicitado (R$)"
+                  name="requestedValue"
+                  type="number"
+                  value={formData.requestedValue}
+                  onChange={handleNumberChange}
+                  variant="outlined"
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                  }}
+                  helperText={`Valor máximo: ${notice?.maxValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Contrapartida (R$)"
+                  name="counterpart"
+                  type="number"
+                  value={formData.counterpart}
+                  onChange={handleNumberChange}
+                  variant="outlined"
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                  }}
+                  helperText="Valor da contrapartida (opcional)"
+                />
+              </Grid>
+            </Grid>
+            
+            <Typography variant="h6" gutterBottom>
+              Itens do Orçamento
+            </Typography>
+            
+            <Box sx={{ mb: 2, maxHeight: 400, overflow: 'auto' }}>
+              {formData.budget.map((item, index) => (
+                <Paper key={item.id} variant="outlined" sx={{ p: 2, mb: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Descrição do Item"
+                        value={item.description}
+                        onChange={(e) => updateBudgetItem(item.id, 'description', e.target.value)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Quantidade"
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateBudgetItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Valor Unitário (R$)"
               type="number"
-              {...register(field.id, {
-                required: field.required ? `${field.label} é obrigatório` : false,
-                min: field.validation?.min !== undefined ? {
-                  value: field.validation.min,
-                  message: `O valor mínimo é ${field.validation.min}`
-                } : undefined,
-                max: field.validation?.max !== undefined ? {
-                  value: field.validation.max,
-                  message: `O valor máximo é ${field.validation.max}`
-                } : undefined,
-              })}
-              className={`w-full px-3 py-2 border ${fieldError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            />
-            {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError.message?.toString()}</p>}
-            {field.validation?.min !== undefined && field.validation?.max !== undefined && (
-              <p className="mt-1 text-xs text-gray-500">
-                <Info size={12} className="inline mr-1" />
-                Valor entre {field.validation.min} e {field.validation.max}
-              </p>
-            )}
-          </div>
-        );
-        
-      case 'date':
-        return (
-          <div key={field.id} className="mb-6">
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <input
-              id={field.id}
-              type="date"
-              {...register(field.id, { required: field.required ? `${field.label} é obrigatório` : false })}
-              className={`w-full px-3 py-2 border ${fieldError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            />
-            {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError.message?.toString()}</p>}
-          </div>
-        );
-        
-      case 'select':
-        return (
-          <div key={field.id} className="mb-6">
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <select
-              id={field.id}
-              {...register(field.id, { required: field.required ? `${field.label} é obrigatório` : false })}
-              className={`w-full px-3 py-2 border ${fieldError ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500`}
-            >
-              <option value="">Selecione uma opção</option>
-              {field.options?.map(option => (
-                <option key={option} value={option}>{option}</option>
+                        value={item.unitValue}
+                        onChange={(e) => updateBudgetItem(item.id, 'unitValue', parseFloat(e.target.value) || 0)}
+                        variant="outlined"
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="Valor Total (R$)"
+                        value={item.totalValue.toFixed(2)}
+                        disabled
+                        variant="outlined"
+                        InputProps={{
+                          startAdornment: <InputAdornment position="start">R$</InputAdornment>,
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        select
+                        label="Categoria"
+                        value={item.category}
+                        onChange={(e) => updateBudgetItem(item.id, 'category', e.target.value)}
+                        variant="outlined"
+                      >
+                        <MenuItem value="Serviços">Serviços</MenuItem>
+                        <MenuItem value="Equipamentos">Equipamentos</MenuItem>
+                        <MenuItem value="Material">Material</MenuItem>
+                        <MenuItem value="Transporte">Transporte</MenuItem>
+                        <MenuItem value="Alimentação">Alimentação</MenuItem>
+                        <MenuItem value="Hospedagem">Hospedagem</MenuItem>
+                        <MenuItem value="Divulgação">Divulgação</MenuItem>
+                        <MenuItem value="Outros">Outros</MenuItem>
+                      </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => removeBudgetItem(item.id)}
+                      >
+                        Remover
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Paper>
               ))}
-            </select>
-            {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError.message?.toString()}</p>}
-          </div>
+            </Box>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={addBudgetItem}
+              >
+                Adicionar Item
+              </Button>
+              
+              <Typography variant="h6">
+                Total: {calculateTotalBudget().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </Typography>
+            </Box>
+          </Box>
         );
         
-      case 'file':
+      case 3: // Documentos
         return (
-          <div key={field.id} className="mb-6">
-            <label htmlFor={field.id} className="block text-sm font-medium text-gray-700 mb-1">
-              {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <Controller
-              name={field.id}
-              control={control}
-              rules={{ required: field.required ? `${field.label} é obrigatório` : false }}
-              render={({ field: { onChange, onBlur, value, ref } }) => (
-                <div className="flex items-center">
-                  <label
-                    htmlFor={`file-${field.id}`}
-                    className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md border border-gray-300 flex items-center"
-                  >
-                    <Upload size={18} className="mr-2" />
-                    <span>Escolher arquivo</span>
-                  </label>
-                  <input
-                    id={`file-${field.id}`}
-                    type="file"
-                    onChange={(e) => {
-                      onChange(e.target.files?.[0]);
-                    }}
-                    onBlur={onBlur}
-                    ref={ref}
-                    className="hidden"
-                  />
-                  <span className="ml-3 text-sm text-gray-500">
-                    {value ? value.name : 'Nenhum arquivo selecionado'}
-                  </span>
-                </div>
-              )}
+          <Box>
+            <Typography variant="body1" paragraph>
+              Faça o upload dos documentos necessários para a inscrição.
+              Os formatos aceitos são PDF, JPG, PNG (máximo de 10MB por arquivo).
+            </Typography>
+            
+            <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+              <FileUpload onUpload={handleFileUpload} maxFiles={10} maxSize={10} />
+            </Paper>
+            
+            <Typography variant="h6" gutterBottom>
+              Documentos Anexados ({formData.documents.length})
+            </Typography>
+            
+            {formData.documents.length === 0 ? (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Nenhum documento anexado. Anexe pelo menos um documento para continuar.
+              </Alert>
+            ) : (
+              <Box sx={{ mb: 2, maxHeight: 300, overflow: 'auto' }}>
+                <Grid container spacing={2}>
+                  {formData.documents.map((file, index) => (
+                    <Grid item xs={12} key={index}>
+                      <Paper variant="outlined" sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="body1">{file.name}</Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </Typography>
+                        </Box>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          onClick={() => removeDocument(index)}
+                        >
+                          Remover
+                        </Button>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            )}
+            
+            <Typography variant="body2" color="textSecondary">
+              * Certifique-se de anexar todos os documentos exigidos no edital.
+            </Typography>
+          </Box>
+        );
+        
+      case 4: // Revisão
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Revisão da Inscrição
+            </Typography>
+            
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1">Informações Básicas</Typography>
+              <Typography><strong>Título:</strong> {formData.title}</Typography>
+              <Typography><strong>Descrição:</strong> {formData.description}</Typography>
+              <Typography><strong>Justificativa:</strong> {formData.justification}</Typography>
+            </Paper>
+            
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1">Detalhes do Projeto</Typography>
+              <Typography><strong>Objetivos:</strong> {formData.objectives}</Typography>
+              <Typography><strong>Público-alvo:</strong> {formData.targetAudience}</Typography>
+              <Typography><strong>Metodologia:</strong> {formData.methodology}</Typography>
+              <Typography><strong>Cronograma:</strong> {formData.timeline}</Typography>
+              <Typography><strong>Resultados Esperados:</strong> {formData.expectedResults}</Typography>
+            </Paper>
+            
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1">Orçamento</Typography>
+              <Typography>
+                <strong>Valor Solicitado:</strong> {formData.requestedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </Typography>
+              <Typography>
+                <strong>Contrapartida:</strong> {formData.counterpart.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </Typography>
+              <Typography>
+                <strong>Total:</strong> {calculateTotalBudget().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </Typography>
+            </Paper>
+            
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1">Documentos Anexados</Typography>
+              {formData.documents.map((file, index) => (
+                <Typography key={index}>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</Typography>
+              ))}
+            </Paper>
+            
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.termsAccepted}
+                  onChange={handleCheckboxChange}
+                  name="termsAccepted"
+                />
+              }
+              label="Declaro que li e concordo com os termos e condições do edital e que todas as informações fornecidas são verdadeiras."
             />
-            {fieldError && <p className="mt-1 text-sm text-red-500">{fieldError.message?.toString()}</p>}
-          </div>
+          </Box>
         );
         
       default:
-        return null;
+        return 'Etapa desconhecida';
     }
   };
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        </div>
-      </div>
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
     );
   }
 
-  if (!notice) {
+  if (success) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <AlertTriangle size={48} className="mx-auto text-yellow-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Edital não encontrado</h2>
-          <p className="text-gray-600 mb-6">O edital que você está procurando não existe ou foi removido.</p>
-          <Link
-            to="/notices"
-            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Alert severity="success" sx={{ mb: 3 }}>
+            Sua inscrição foi enviada com sucesso!
+          </Alert>
+          <Typography paragraph>
+            Em breve você receberá um e-mail de confirmação com os detalhes da sua inscrição.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate('/applications')}
           >
-            Voltar para Editais
-          </Link>
-        </div>
-      </div>
+            Ver Minhas Inscrições
+          </Button>
+        </Paper>
+      </Container>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Navegação */}
-      <div className="mb-6">
-        <Link
-          to={`/notices/${id}`}
-          className="flex items-center text-purple-600 hover:text-purple-800 transition-colors"
-        >
-          <ChevronLeft size={20} className="mr-1" />
-          <span>Voltar para o Edital</span>
-        </Link>
-      </div>
-
-      {/* Cabeçalho */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Inscrição no Edital</h1>
-        <p className="text-gray-600">{notice.title} - {notice.entityName}</p>
-      </div>
-
-      {/* Formulário */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="flex">
-            <Info size={20} className="text-blue-500 mr-3 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-blue-800 font-medium mb-1">Instruções para preenchimento</h3>
-              <p className="text-blue-700 text-sm">
-                Preencha todos os campos obrigatórios (marcados com *). Você pode salvar o formulário como rascunho e continuar depois. 
-                Após o envio, não será possível editar as informações. Certifique-se de que todos os dados estão corretos antes de enviar.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Campos do formulário */}
-          {notice.fields.map(field => renderFormField(field))}
-
-          {/* Declaração de veracidade */}
-          <div className="mb-6">
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  {...register('terms', { required: 'Você precisa aceitar os termos para continuar' })}
-                  className="focus:ring-purple-500 h-4 w-4 text-purple-600 border-gray-300 rounded"
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="terms" className="font-medium text-gray-700">
-                  Declaro que todas as informações fornecidas são verdadeiras e estou ciente das responsabilidades legais.
-                </label>
-                {errors.terms && (
-                  <p className="mt-1 text-sm text-red-500">{errors.terms.message?.toString()}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Botões de ação */}
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              onClick={() => navigate(`/notices/${id}`)}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2 border border-purple-300 rounded-md text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              Salvar Rascunho
-            </button>
-            <button
-              type="submit"
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          {isEditMode ? 'Editar Inscrição' : 'Nova Inscrição'}
+        </Typography>
+        
+        {notice && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Edital: {notice.title}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Data Limite: {notice.endDate ? new Date(notice.endDate).toLocaleDateString('pt-BR') : 'Não definida'}
+            </Typography>
+          </Box>
+        )}
+        
+        <Divider sx={{ mb: 3 }} />
+        
+        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+        
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+        
+        <Box sx={{ mb: 3 }}>
+          {getStepContent(activeStep)}
+        </Box>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+          <Button
+            disabled={activeStep === 0}
+            onClick={handleBack}
+            variant="outlined"
+          >
+            Voltar
+          </Button>
+          
+          {activeStep === steps.length - 1 ? (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
               disabled={submitting}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center"
+              sx={{ minWidth: 120 }}
             >
-              {submitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                  <span>Enviando...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={18} className="mr-2" />
-                  <span>Enviar Inscrição</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              {submitting ? <CircularProgress size={24} /> : 'Enviar'}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleNext}
+            >
+              Próximo
+            </Button>
+          )}
+        </Box>
+      </Paper>
+    </Container>
   );
 }; 

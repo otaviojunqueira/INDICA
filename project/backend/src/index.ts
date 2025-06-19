@@ -6,13 +6,6 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/database';
 import routes from './routes';
 
-// Rotas
-import authRoutes from './routes/auth.routes';
-import userRoutes from './routes/user.routes';
-import entityRoutes from './routes/entity.routes';
-import noticeRoutes from './routes/notice.routes';
-import applicationRoutes from './routes/application.routes';
-
 // Configuração das variáveis de ambiente
 dotenv.config();
 
@@ -28,10 +21,8 @@ app.use(morgan('dev'));
 // Diretório de uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rotas
+// Rotas API
 app.use('/api', routes);
-app.use('/api/auth', authRoutes);
-app.use('/api/entities', entityRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {

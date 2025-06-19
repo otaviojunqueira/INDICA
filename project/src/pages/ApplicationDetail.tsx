@@ -17,6 +17,21 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Button,
+  Grid,
+  Chip,
+  Divider,
+  CircularProgress,
+  Alert,
+  List,
+  ListItem,
+  ListItemText
+} from '@mui/material';
 
 // Tipos simulados (serão substituídos pelos reais da API)
 interface Application {
@@ -231,229 +246,216 @@ export const ApplicationDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        </div>
-      </div>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
     );
   }
 
   if (!application) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <AlertTriangle size={48} className="mx-auto text-yellow-500 mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Inscrição não encontrada</h2>
-          <p className="text-gray-600 mb-6">A inscrição que você está procurando não existe ou foi removida.</p>
-          <Link
-            to="/applications"
-            className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-          >
-            Voltar para Inscrições
-          </Link>
-        </div>
-      </div>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Inscrição não encontrada.
+        </Alert>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate(-1)}
+        >
+          Voltar
+        </Button>
+      </Container>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Navegação e ações */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 space-y-4 md:space-y-0">
-        <Link
-          to="/applications"
-          className="flex items-center text-purple-600 hover:text-purple-800 transition-colors"
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" component="h1">
+          Detalhes da Inscrição
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => navigate('/applications')}
         >
-          <ChevronLeft size={20} className="mr-1" />
-          <span>Voltar para Inscrições</span>
-        </Link>
-
-        {/* Ações */}
-        {application.status === 'draft' && (
-          <div className="flex space-x-3">
-            <Link
-              to={`/notices/${application.noticeId}/apply?draft=${application.id}`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-blue-700 transition-colors"
-            >
-              <Edit size={18} />
-              <span>Editar</span>
-            </Link>
-            <button
-              onClick={handleDelete}
-              className="bg-red-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-red-700 transition-colors"
-            >
-              <Trash2 size={18} />
-              <span>Excluir</span>
-            </button>
-          </div>
-        )}
+          Voltar para Lista
+        </Button>
+      </Box>
+      
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="h5" component="h2" gutterBottom>
+              {application.projectTitle}
+            </Typography>
+            <Typography variant="body1" color="textSecondary" gutterBottom>
+              Edital: {application.noticeTitle}
+            </Typography>
+          </Box>
+          <Chip 
+            label={translateStatus(application.status)}
+            color={getStatusColor(application.status)}
+            sx={{ fontSize: '1rem', px: 2, py: 1 }}
+          />
+        </Box>
+        
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={4}>
+            <Typography variant="subtitle1" gutterBottom>
+              Data de Envio
+            </Typography>
+            <Typography variant="body1">
+              {formatDate(application.submittedAt)} às {new Date(application.submittedAt).toLocaleTimeString('pt-BR')}
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Typography variant="subtitle1" gutterBottom>
+              Valor Solicitado
+            </Typography>
+            <Typography variant="body1">
+              {formatCurrency(application.requestedAmount)}
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} md={4}>
+            <Typography variant="subtitle1" gutterBottom>
+              Categoria
+            </Typography>
+            <Typography variant="body1">
+              {application.category}
+            </Typography>
+          </Grid>
+        </Grid>
 
         {application.status === 'rejected' && application.appealDeadline && new Date() < application.appealDeadline && (
-          <button
+          <Box sx={{ mt: 3 }}>
+            <Button
+              variant="contained"
+              color="primary"
             onClick={handleAppeal}
-            className="bg-purple-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-purple-700 transition-colors"
-          >
-            <MessageCircle size={18} />
-            <span>Entrar com Recurso</span>
-          </button>
+            >
+              Entrar com Recurso
+            </Button>
+          </Box>
         )}
-      </div>
-
-      {/* Cabeçalho */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
-          <div>
-            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mb-3 ${getStatusColor(application.status)}`}>
-              {getStatusIcon(application.status)}
-              <span className="ml-2">{translateStatus(application.status)}</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{application.projectTitle}</h1>
-            <p className="text-gray-600">
-              Edital: {application.noticeTitle} - {application.entityName}
-            </p>
-          </div>
-          <div className="mt-4 md:mt-0 text-right">
-            <div className="text-sm text-gray-500 mb-1">Valor solicitado:</div>
-            <div className="text-xl font-bold text-gray-900">{formatCurrency(application.requestedAmount)}</div>
-          </div>
-        </div>
-        
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center text-sm text-gray-600 mb-2">
-            <Calendar size={16} className="mr-2 text-gray-400" />
-            <span>Enviado em: {formatDate(application.submittedAt)}</span>
-          </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <FileText size={16} className="mr-2 text-gray-400" />
-            <span>Categoria: {application.category}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Conteúdo principal */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Detalhes do Projeto</h2>
-          
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Descrição do Projeto</h3>
-            <p className="text-gray-700">{application.projectDescription}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Público-alvo</h3>
-              <p className="text-gray-700">{application.formData.targetAudience}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Área Cultural</h3>
-              <p className="text-gray-700">{application.formData.culturalArea}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Período de Execução</h3>
-              <p className="text-gray-700">{application.formData.executionPeriod} meses</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Resultados Esperados</h3>
-              <p className="text-gray-700">{application.formData.expectedResult}</p>
-            </div>
-          </div>
-          
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Documentos</h3>
-          <div className="space-y-3 mb-6">
-            {application.files.map((file) => (
-              <a
-                key={file.id}
-                href={file.url}
-                download
-                className="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                <FileText size={20} className="text-gray-400 mr-3" />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{file.name}</p>
-                  <p className="text-xs text-gray-500">{file.type.split('/')[1].toUpperCase()}</p>
-                </div>
-                <Download size={18} className="text-gray-400" />
-              </a>
-            ))}
-          </div>
-          
-          {/* Avaliações (se houver) */}
-          {application.evaluations && application.evaluations.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-lg font-medium text-gray-900 mb-3">Avaliações</h3>
-              <div className="space-y-4">
-                {application.evaluations.map((evaluation) => (
-                  <div key={evaluation.id} className="border border-gray-200 rounded-md p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{evaluation.evaluatorName}</h4>
-                        <p className="text-sm text-gray-500">{formatDate(evaluation.date)}</p>
-                      </div>
-                      <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {evaluation.score}/100
-                      </div>
-                    </div>
-                    <p className="text-gray-700">{evaluation.comment}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Informações de recurso (se aplicável) */}
-          {application.status === 'rejected' && application.appealDeadline && (
-            <div className="mt-6 p-4 border border-yellow-200 bg-yellow-50 rounded-md">
-              <div className="flex">
-                <AlertCircle size={20} className="text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-yellow-800 font-medium mb-1">Informações sobre recurso</h3>
-                  <p className="text-yellow-700 text-sm">
-                    Você pode entrar com recurso até {formatDate(application.appealDeadline)}.
-                    {new Date() < application.appealDeadline ? (
-                      ' Clique no botão "Entrar com Recurso" acima para contestar o resultado.'
-                    ) : (
-                      ' O prazo para recurso expirou.'
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Rodapé */}
-        <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              {application.status === 'draft' ? (
-                <span>Este é um rascunho e ainda não foi enviado.</span>
-              ) : application.status === 'submitted' ? (
-                <span>Sua inscrição foi enviada e está aguardando avaliação.</span>
-              ) : application.status === 'under_evaluation' ? (
-                <span>Sua inscrição está sendo avaliada.</span>
-              ) : application.status === 'approved' ? (
-                <span>Sua inscrição foi aprovada!</span>
-              ) : application.status === 'rejected' ? (
-                <span>Sua inscrição foi reprovada.</span>
-              ) : application.status === 'in_appeal' ? (
-                <span>Seu recurso está sendo analisado.</span>
-              ) : null}
-            </div>
+      </Paper>
+      
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Descrição do Projeto
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
             
-            {application.status === 'approved' && (
-              <Link
-                to={`/applications/${application.id}/contract`}
-                className="text-purple-600 text-sm font-medium flex items-center"
-              >
-                Ver Contrato
-                <ArrowRight size={16} className="ml-1" />
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+            <Typography variant="body1" paragraph>
+              {application.projectDescription}
+            </Typography>
+            
+            <Typography variant="subtitle1" gutterBottom>
+              Público-alvo
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {application.formData.targetAudience}
+            </Typography>
+            
+            <Typography variant="subtitle1" gutterBottom>
+              Área Cultural
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {application.formData.culturalArea}
+            </Typography>
+            
+            <Typography variant="subtitle1" gutterBottom>
+              Período de Execução
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {application.formData.executionPeriod} meses
+            </Typography>
+            
+            <Typography variant="subtitle1" gutterBottom>
+              Resultados Esperados
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {application.formData.expectedResult}
+            </Typography>
+          </Paper>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Documentos
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            
+            <List>
+            {application.files.map((file) => (
+                <ListItem key={file.id} sx={{ py: 1 }}>
+                  <ListItemText
+                    primary={file.name}
+                    secondary={file.type.split('/')[1].toUpperCase()}
+                  />
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => window.open(file.url, '_blank')}
+                  >
+                    Visualizar
+                  </Button>
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
+          
+          {application.evaluations && application.evaluations.length > 0 && (
+            <Paper sx={{ p: 3, mt: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Avaliações
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              
+                {application.evaluations.map((evaluation) => (
+                <Box key={evaluation.id} sx={{ mb: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="subtitle1">
+                      {evaluation.evaluatorName}
+                    </Typography>
+                    <Chip 
+                      label={translateStatus(evaluation.status)}
+                      color={getStatusColor(evaluation.status)}
+                      size="small"
+                    />
+                  </Box>
+                  
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    {formatDate(evaluation.date)}
+                  </Typography>
+                  
+                  <Box sx={{ mt: 1, mb: 1 }}>
+                    <Typography variant="body2">
+                      <strong>Pontuação:</strong> {evaluation.score}/100
+                    </Typography>
+                  </Box>
+                  
+                  <Typography variant="body2">
+                    <strong>Comentários:</strong>
+                  </Typography>
+                  <Typography variant="body1" paragraph>
+                    {evaluation.comment}
+                  </Typography>
+                  
+                  <Divider />
+                </Box>
+              ))}
+            </Paper>
+          )}
+        </Grid>
+      </Grid>
+    </Container>
   );
 }; 

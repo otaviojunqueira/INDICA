@@ -1,195 +1,213 @@
-import React, { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import React, { useState, useRef } from 'react';
 import {
   Box,
+  Button,
   Typography,
-  LinearProgress,
+  Paper,
+  CircularProgress,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
-  Paper,
+  Divider,
   Alert
 } from '@mui/material';
-import {
-  CloudUpload as UploadIcon,
-  Delete as DeleteIcon,
-  InsertDriveFile as FileIcon
-} from '@mui/icons-material';
-import { UPLOAD_MAX_SIZE, ALLOWED_FILE_TYPES } from '../../config';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import { styled } from '@mui/material/styles';
 
 interface FileUploadProps {
-  onUpload: (files: File[]) => Promise<void>;
-  onDelete?: (fileUrl: string) => Promise<void>;
+  onUpload: (files: File[]) => void;
   maxFiles?: number;
-  accept?: string[];
-  uploadedFiles?: Array<{
-    url: string;
-    filename: string;
-  }>;
+  maxSize?: number; // in MB
+  acceptedTypes?: string;
+  multiple?: boolean;
 }
+
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   onUpload,
-  onDelete,
-  maxFiles = 1,
-  accept = ALLOWED_FILE_TYPES,
-  uploadedFiles = []
+  maxFiles = 5,
+  maxSize = 5,
+  acceptedTypes = '.pdf,.doc,.docx,.jpg,.jpeg,.png',
+  multiple = true
 }) => {
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      try {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = event.target.files;
+    if (!fileList) return;
+
         setError(null);
-        setUploading(true);
-        setProgress(0);
-
-        // Validar número máximo de arquivos
-        if (acceptedFiles.length + uploadedFiles.length > maxFiles) {
-          throw new Error(`Número máximo de arquivos permitido: ${maxFiles}`);
-        }
-
-        // Validar tamanho dos arquivos
-        for (const file of acceptedFiles) {
-          if (file.size > UPLOAD_MAX_SIZE) {
-            throw new Error(
-              `O arquivo ${file.name} é muito grande. Tamanho máximo: ${
-                UPLOAD_MAX_SIZE / 1024 / 1024
-              }MB`
-            );
-          }
-        }
-
-        // Simular progresso do upload
-        const interval = setInterval(() => {
-          setProgress((prev) => {
-            if (prev >= 90) {
-              clearInterval(interval);
-              return prev;
-            }
-            return prev + 10;
-          });
-        }, 200);
-
-        // Realizar upload
-        await onUpload(acceptedFiles);
-
-        // Finalizar progresso
-        clearInterval(interval);
-        setProgress(100);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao fazer upload');
-      } finally {
-        setUploading(false);
-        setTimeout(() => setProgress(0), 1000);
-      }
-    },
-    [maxFiles, onUpload, uploadedFiles.length]
-  );
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: accept.reduce((acc, curr) => ({ ...acc, [curr]: [] }), {}),
-    maxFiles,
-    disabled: uploading
-  });
-
-  const handleDelete = async (fileUrl: string) => {
-    try {
-      setError(null);
-      if (onDelete) {
-        await onDelete(fileUrl);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir arquivo');
+    
+    // Verificar quantidade máxima de arquivos
+    if (files.length + fileList.length > maxFiles) {
+      setError(`Você pode enviar no máximo ${maxFiles} arquivo(s).`);
+      return;
     }
+
+    const newFiles: File[] = [];
+    
+    // Processar cada arquivo
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      
+      // Verificar tamanho do arquivo
+      if (file.size > maxSize * 1024 * 1024) {
+        setError(`O arquivo "${file.name}" excede o tamanho máximo de ${maxSize}MB.`);
+        continue;
+      }
+      
+      // Verificar se já existe um arquivo com mesmo nome
+      if (files.some(f => f.name === file.name)) {
+        setError(`Um arquivo chamado "${file.name}" já foi selecionado.`);
+        continue;
+      }
+      
+      newFiles.push(file);
+    }
+
+    if (newFiles.length > 0) {
+      const updatedFiles = [...files, ...newFiles];
+      setFiles(updatedFiles);
+      onUpload(updatedFiles);
+    }
+    
+    // Limpar input para permitir selecionar o mesmo arquivo novamente
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    const updatedFiles = files.filter((_, i) => i !== index);
+    setFiles(updatedFiles);
+    onUpload(updatedFiles);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' bytes';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
   };
 
   return (
     <Box>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      <Paper
-        {...getRootProps()}
-        sx={{
-          p: 3,
+      <Box sx={{ 
+        border: '2px dashed #ccc', 
+        borderRadius: 2, 
+        p: 4, 
+        mb: 2, 
           textAlign: 'center',
-          cursor: 'pointer',
-          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
-          border: '2px dashed',
-          borderColor: isDragActive ? 'primary.main' : 'divider'
-        }}
-      >
-        <input {...getInputProps()} />
-        <UploadIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+        backgroundColor: '#fafafa'
+      }}>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={acceptedTypes}
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+          multiple={multiple}
+        />
+        
+        <CloudUploadIcon sx={{ fontSize: 60, mb: 1, color: 'primary.main' }} />
+        
         <Typography variant="h6" gutterBottom>
-          {isDragActive
-            ? 'Solte os arquivos aqui'
-            : 'Arraste e solte arquivos aqui ou clique para selecionar'}
+          Arraste e solte seus arquivos aqui
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Tipos permitidos: {accept.join(', ')}
-          <br />
-          Tamanho máximo: {UPLOAD_MAX_SIZE / 1024 / 1024}MB
-          <br />
-          Máximo de arquivos: {maxFiles}
+        
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          ou
         </Typography>
-      </Paper>
-
-      {uploading && (
-        <Box sx={{ mt: 2 }}>
-          <LinearProgress variant="determinate" value={progress} />
+        
+        <Button
+          component="label"
+          variant="contained"
+          disabled={files.length >= maxFiles || uploading}
+          startIcon={uploading ? <CircularProgress size={20} /> : null}
+        >
+          Selecionar Arquivo{multiple ? 's' : ''}
+          <VisuallyHiddenInput 
+            type="file" 
+            accept={acceptedTypes}
+            onChange={handleFileChange}
+            multiple={multiple}
+          />
+        </Button>
+        
+        <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+          Formatos aceitos: {acceptedTypes.replace(/\./g, '').replace(/,/g, ', ')}
+        </Typography>
+        
+        <Typography variant="body2" color="textSecondary">
+          Tamanho máximo: {maxSize}MB
+        </Typography>
         </Box>
-      )}
-
-      {uploadedFiles.length > 0 && (
-        <List sx={{ mt: 2 }}>
-          {uploadedFiles.map((file) => (
-            <ListItem
-              key={file.url}
-              sx={{
-                bgcolor: 'background.paper',
-                borderRadius: 1,
-                mb: 1
-              }}
-            >
-              <FileIcon sx={{ mr: 2 }} />
-              <ListItemText
-                primary={file.filename}
-                secondary={
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'inherit' }}
-                  >
-                    Visualizar arquivo
-                  </a>
-                }
-              />
-              {onDelete && (
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    aria-label="delete"
-                    onClick={() => handleDelete(file.url)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              )}
+      
+      {files.length > 0 && (
+        <Paper variant="outlined" sx={{ mt: 2 }}>
+          <List>
+            <ListItem>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                Arquivos Selecionados ({files.length}/{maxFiles})
+              </Typography>
             </ListItem>
+            <Divider />
+            
+            {files.map((file, index) => (
+              <React.Fragment key={index}>
+            <ListItem
+                  secondaryAction={
+                    <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveFile(index)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+              <ListItemText
+                    primary={file.name}
+                    secondary={formatFileSize(file.size)}
+                    primaryTypographyProps={{
+                      style: { 
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }
+                    }}
+                  />
+                  <CheckCircleIcon color="success" sx={{ ml: 1 }} />
+            </ListItem>
+                {index < files.length - 1 && <Divider />}
+              </React.Fragment>
           ))}
         </List>
+        </Paper>
       )}
+      
+      <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+        * Certifique-se de que todos os documentos estejam legíveis e no formato correto.
+      </Typography>
     </Box>
   );
 }; 

@@ -1,296 +1,419 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Filter, FileText, Calendar, Clock, AlertCircle, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Button,
+  Grid,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Alert,
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  Divider,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
+} from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useAuthStore } from '../store/authStore';
-import toast from 'react-hot-toast';
 
-// Tipos simulados (serão substituídos pelos reais da API)
+// Dados simulados para as inscrições do usuário
+const mockApplications = [
+  {
+    id: '1',
+    title: 'Festival de Música Comunitária',
+    noticeId: '1',
+    noticeTitle: 'Edital de Fomento à Música',
+    submissionDate: '2023-05-10T14:30:00',
+    status: 'under_review',
+    requestedValue: 45000,
+    returnDate: null,
+    comments: null
+  },
+  {
+    id: '2',
+    title: 'Oficinas de Arte para Jovens',
+    noticeId: '2',
+    noticeTitle: 'Edital de Oficinas Culturais',
+    submissionDate: '2023-04-22T09:15:00',
+    status: 'approved',
+    requestedValue: 30000,
+    returnDate: '2023-05-15T11:20:00',
+    comments: 'Projeto aprovado com ressalvas quanto ao cronograma.'
+  },
+  {
+    id: '3',
+    title: 'Documentário sobre Cultura Local',
+    noticeId: '3',
+    noticeTitle: 'Edital de Audiovisual',
+    submissionDate: '2023-06-01T16:45:00',
+    status: 'rejected',
+    requestedValue: 60000,
+    returnDate: '2023-06-20T10:30:00',
+    comments: 'Projeto não atendeu aos requisitos mínimos do edital.'
+  },
+  {
+    id: '4',
+    title: 'Mostra de Artes Visuais',
+    noticeId: '1',
+    noticeTitle: 'Edital de Fomento às Artes',
+    submissionDate: '2023-07-05T11:00:00',
+    status: 'draft',
+    requestedValue: 25000,
+    returnDate: null,
+    comments: null
+  }
+];
+
+// Interface para tipo de inscrição
 interface Application {
   id: string;
+  title: string;
   noticeId: string;
   noticeTitle: string;
-  projectTitle: string;
-  entityName: string;
-  submittedAt: Date;
-  status: 'draft' | 'submitted' | 'under_evaluation' | 'approved' | 'rejected' | 'in_appeal';
-  requestedAmount: number;
-  category: string;
+  submissionDate: string;
+  status: 'draft' | 'under_review' | 'approved' | 'rejected' | 'pending_adjustment';
+  requestedValue: number;
+  returnDate: string | null;
+  comments: string | null;
 }
 
-export const ApplicationsPage: React.FC = () => {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const { user } = useAuthStore();
-
-  // Função para formatar data
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
-
-  // Função para formatar valor monetário
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    });
-  };
-
-  // Função para obter a cor do status
+// Função para retornar a cor do status
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-gray-200 text-gray-800';
-      case 'submitted':
-        return 'bg-blue-100 text-blue-800';
-      case 'under_evaluation':
-        return 'bg-yellow-100 text-yellow-800';
+      return 'default';
+    case 'under_review':
+      return 'info';
+    case 'pending_adjustment':
+      return 'warning';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+      return 'success';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'in_appeal':
-        return 'bg-purple-100 text-purple-800';
+      return 'error';
       default:
-        return 'bg-gray-100 text-gray-800';
+      return 'default';
     }
   };
 
   // Função para traduzir o status
-  const translateStatus = (status: string) => {
+const getStatusText = (status: string) => {
     switch (status) {
       case 'draft':
         return 'Rascunho';
-      case 'submitted':
-        return 'Enviado';
-      case 'under_evaluation':
-        return 'Em Avaliação';
+    case 'under_review':
+      return 'Em Análise';
+    case 'pending_adjustment':
+      return 'Ajustes Pendentes';
       case 'approved':
         return 'Aprovado';
       case 'rejected':
         return 'Reprovado';
-      case 'in_appeal':
-        return 'Em Recurso';
       default:
-        return status;
-    }
-  };
+      return 'Desconhecido';
+  }
+};
 
-  // Função para obter o ícone do status
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return <FileText size={16} />;
-      case 'submitted':
-        return <CheckCircle size={16} />;
-      case 'under_evaluation':
-        return <Clock size={16} />;
-      case 'approved':
-        return <CheckCircle size={16} />;
-      case 'rejected':
-        return <XCircle size={16} />;
-      case 'in_appeal':
-        return <AlertCircle size={16} />;
-      default:
-        return <FileText size={16} />;
-    }
-  };
+export const ApplicationsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
+  
+  // Estados
+  const [loading, setLoading] = useState(true);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Efeito para carregar as inscrições
+  // Verificar autenticação
   useEffect(() => {
-    // Simulação de chamada à API
-    const fetchApplications = async () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Carregar inscrições do usuário
+  useEffect(() => {
+    const loadApplications = async () => {
       setLoading(true);
       try {
-        // Em produção, substituir por chamada real à API
+        // Simulação de chamada à API
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Dados simulados
-        const mockApplications: Application[] = [
-          {
-            id: '1',
-            noticeId: '1',
-            noticeTitle: 'Edital de Apoio à Cultura 2024',
-            projectTitle: 'Festival de Música Independente',
-            entityName: 'Secretaria de Cultura do Estado',
-            submittedAt: new Date('2024-03-15'),
-            status: 'under_evaluation',
-            requestedAmount: 45000,
-            category: 'Música',
-          },
-          {
-            id: '2',
-            noticeId: '2',
-            noticeTitle: 'Prêmio de Artes Visuais',
-            projectTitle: 'Exposição Fotográfica "Olhares da Cidade"',
-            entityName: 'Fundação Municipal de Cultura',
-            submittedAt: new Date('2024-02-28'),
-            status: 'approved',
-            requestedAmount: 25000,
-            category: 'Artes Visuais',
-          },
-          {
-            id: '3',
-            noticeId: '3',
-            noticeTitle: 'Edital de Audiovisual',
-            projectTitle: 'Curta-metragem "Memórias"',
-            entityName: 'Secretaria Nacional do Audiovisual',
-            submittedAt: new Date('2024-02-10'),
-            status: 'rejected',
-            requestedAmount: 60000,
-            category: 'Audiovisual',
-          },
-          {
-            id: '4',
-            noticeId: '5',
-            noticeTitle: 'Edital de Patrimônio Cultural',
-            projectTitle: 'Restauração de Casarão Histórico',
-            entityName: 'Instituto do Patrimônio Histórico',
-            submittedAt: new Date('2024-03-20'),
-            status: 'submitted',
-            requestedAmount: 85000,
-            category: 'Patrimônio',
-          },
-          {
-            id: '5',
-            noticeId: '4',
-            noticeTitle: 'Programa de Incentivo à Literatura',
-            projectTitle: 'Antologia de Contos Regionais',
-            entityName: 'Fundação Biblioteca Nacional',
-            submittedAt: new Date('2024-03-01'),
-            status: 'draft',
-            requestedAmount: 15000,
-            category: 'Literatura',
-          },
-        ];
-
+        // Usar dados simulados
         setApplications(mockApplications);
       } catch (error) {
         console.error('Erro ao carregar inscrições:', error);
-        toast.error('Erro ao carregar suas inscrições.');
+        setError('Ocorreu um erro ao carregar as inscrições. Tente novamente.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchApplications();
+    loadApplications();
   }, []);
 
-  // Filtragem de inscrições
-  const filteredApplications = applications.filter(application => {
-    const matchesSearch = application.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         application.noticeTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         application.entityName.toLowerCase().includes(searchTerm.toLowerCase());
+  // Abrir menu de ações
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, application: Application) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedApplication(application);
+  };
+
+  // Fechar menu de ações
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  // Visualizar inscrição
+  const handleViewApplication = () => {
+    if (selectedApplication) {
+      navigate(`/application/${selectedApplication.id}`);
+    }
+    handleMenuClose();
+  };
+
+  // Editar inscrição
+  const handleEditApplication = () => {
+    if (selectedApplication) {
+      navigate(`/application/${selectedApplication.id}/edit`);
+    }
+    handleMenuClose();
+  };
+
+  // Abrir diálogo de confirmação de exclusão
+  const handleOpenDeleteDialog = () => {
+    setOpenDeleteDialog(true);
+    handleMenuClose();
+  };
+
+  // Fechar diálogo de confirmação de exclusão
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+  };
+
+  // Excluir inscrição
+  const handleDeleteApplication = async () => {
+    if (!selectedApplication) return;
     
-    const matchesStatus = selectedStatus === 'all' || application.status === selectedStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
+    setDeleting(true);
+    try {
+      // Simulação de chamada à API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Remover inscrição da lista
+      setApplications(prev => prev.filter(app => app.id !== selectedApplication.id));
+    } catch (error) {
+      console.error('Erro ao excluir inscrição:', error);
+      setError('Ocorreu um erro ao excluir a inscrição. Tente novamente.');
+    } finally {
+      setDeleting(false);
+      setOpenDeleteDialog(false);
+    }
+  };
+
+  // Criar nova inscrição
+  const handleNewApplication = () => {
+    navigate('/application/new');
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Minhas Inscrições</h1>
-      </div>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" component="h1">
+          Minhas Inscrições
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleNewApplication}
+        >
+          Nova Inscrição
+        </Button>
+      </Box>
 
-      {/* Filtros e busca */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Busca */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar inscrições..."
-              className="pl-10 w-full border border-gray-300 rounded-md py-2 focus:ring-purple-500 focus:border-purple-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          {/* Filtro por status */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Filter size={18} className="text-gray-400" />
-            </div>
-            <select
-              className="pl-10 w-full border border-gray-300 rounded-md py-2 focus:ring-purple-500 focus:border-purple-500"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="all">Todos os status</option>
-              <option value="draft">Rascunho</option>
-              <option value="submitted">Enviado</option>
-              <option value="under_evaluation">Em Avaliação</option>
-              <option value="approved">Aprovado</option>
-              <option value="rejected">Reprovado</option>
-              <option value="in_appeal">Em Recurso</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de inscrições */}
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        </div>
-      ) : filteredApplications.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-500">Nenhuma inscrição encontrada com os filtros selecionados.</p>
-          <Link
-            to="/notices"
-            className="mt-4 inline-block bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-          >
-            Explorar Editais
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredApplications.map((application) => (
-            <Link
-              to={`/applications/${application.id}`}
-              key={application.id}
-              className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              <div className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${getStatusColor(application.status)}`}>
-                    {getStatusIcon(application.status)}
-                    <span className="ml-1">{translateStatus(application.status)}</span>
-                  </span>
-                  <span className="text-sm text-gray-500">{application.category}</span>
-                </div>
-                
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">{application.projectTitle}</h2>
-                <p className="text-sm text-gray-600 mb-4">
-                  Edital: {application.noticeTitle} - {application.entityName}
-                </p>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Calendar size={16} className="mr-2 text-gray-400" />
-                    <span>Enviado em: {formatDate(application.submittedAt)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="font-medium">{formatCurrency(application.requestedAmount)}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex justify-end">
-                <span className="text-purple-600 text-sm font-medium flex items-center">
-                  Ver detalhes
-                  <ArrowRight size={16} className="ml-1" />
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
       )}
-    </div>
+
+      {applications.length === 0 ? (
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Typography paragraph>
+            Você ainda não possui inscrições em editais.
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate('/notices')}
+          >
+            Ver Editais Disponíveis
+          </Button>
+        </Paper>
+      ) : (
+        <Grid container spacing={3}>
+          {applications.map((application) => (
+            <Grid item xs={12} md={6} key={application.id}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                      {application.title}
+                    </Typography>
+                    <IconButton 
+                      aria-label="mais opções" 
+                      onClick={(e) => handleMenuOpen(e, application)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </Box>
+                  
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Edital: {application.noticeTitle}
+                  </Typography>
+                  
+                  <Box sx={{ mt: 1, mb: 1 }}>
+                    <Chip 
+                      label={getStatusText(application.status)}
+                      color={getStatusColor(application.status) as any}
+                      size="small"
+                    />
+                  </Box>
+                  
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Valor Solicitado:</strong> {application.requestedValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Data de Envio:</strong> {new Date(application.submissionDate).toLocaleDateString('pt-BR')}
+                    </Typography>
+                    
+                    {application.returnDate && (
+                      <Typography variant="body2">
+                        <strong>Data de Resposta:</strong> {new Date(application.returnDate).toLocaleDateString('pt-BR')}
+                      </Typography>
+                    )}
+                  </Box>
+                  
+                  {application.comments && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="body2">
+                        <strong>Comentários:</strong>
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        {application.comments}
+                      </Typography>
+                    </>
+                  )}
+                </CardContent>
+                
+                <CardActions>
+                  <Button 
+                    size="small" 
+                    startIcon={<VisibilityIcon />} 
+                    onClick={() => navigate(`/application/${application.id}`)}
+                  >
+                    Visualizar
+                  </Button>
+                  
+                  {['draft', 'pending_adjustment'].includes(application.status) && (
+                    <Button 
+                      size="small" 
+                      startIcon={<EditIcon />}
+                      onClick={() => navigate(`/application/${application.id}/edit`)}
+                    >
+                      Editar
+                    </Button>
+                  )}
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* Menu de ações */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleViewApplication}>
+          <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
+          Visualizar
+        </MenuItem>
+        
+        {selectedApplication && ['draft', 'pending_adjustment'].includes(selectedApplication.status) && (
+          <MenuItem onClick={handleEditApplication}>
+            <EditIcon fontSize="small" sx={{ mr: 1 }} />
+            Editar
+          </MenuItem>
+        )}
+        
+        {selectedApplication && ['draft'].includes(selectedApplication.status) && (
+          <MenuItem onClick={handleOpenDeleteDialog}>
+            <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+            Excluir
+          </MenuItem>
+        )}
+      </Menu>
+
+      {/* Diálogo de confirmação de exclusão */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+      >
+        <DialogTitle>Confirmar Exclusão</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Tem certeza que deseja excluir esta inscrição? Esta ação não poderá ser desfeita.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} disabled={deleting}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleDeleteApplication}
+            color="error" 
+            disabled={deleting}
+            startIcon={deleting ? <CircularProgress size={20} /> : null}
+          >
+            {deleting ? 'Excluindo...' : 'Excluir'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 }; 

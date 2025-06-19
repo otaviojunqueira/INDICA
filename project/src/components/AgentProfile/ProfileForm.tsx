@@ -18,18 +18,7 @@ import {
   Chip
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { IAgentProfile } from '../../services/agentProfile.service';
-
-// Interface para endereço
-interface IAddress {
-  street: string;
-  number: string;
-  complement?: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-  zipCode: string;
-}
+import { IAgentProfile, IAddress } from '../../types';
 
 // Esquema de validação
 const validationSchema = Yup.object().shape({

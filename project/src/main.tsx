@@ -20,7 +20,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider theme={theme}>
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
         <CssBaseline />
-        <App />
+    <App />
       </LocalizationProvider>
     </ThemeProvider>
   </StrictMode>

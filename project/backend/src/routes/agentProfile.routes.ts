@@ -13,6 +13,9 @@ router.route('/')
   .get(agentProfileController.getProfile)
   .delete(agentProfileController.deleteProfile);
 
+// Rota para obter perfil por ID de usuário
+router.get('/user/:userId', agentProfileController.getProfileByUserId);
+
 // Rota para visualizar perfil público de outro agente
 router.get('/public/:userId', agentProfileController.getPublicProfile);
 

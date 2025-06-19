@@ -9,15 +9,14 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';
-import { useAuth } from '../../auth';
 import { ProfileForm } from '../../components/AgentProfile/ProfileForm';
-import { agentProfileService, IAgentProfile } from '../../services/agentProfile.service';
+import { agentProfileService } from '../../services/agentProfile.service';
+import { IAgentProfile } from '../../types';
+import { api } from '../../config/axios';
 
 export const AgentProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user: storeUser } = useAuthStore();
-  const { user: authUser } = useAuth();
-  const user = authUser || storeUser; // Usar o usuário do contexto de autenticação ou do store
+  const { user, isAuthenticated } = useAuthStore();
   
   const [profile, setProfile] = useState<Partial<IAgentProfile> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,25 +24,51 @@ export const AgentProfilePage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      loadProfile();
+    // Verificar se o usuário está autenticado
+    if (!isAuthenticated || !user) {
+      console.log("Usuário não autenticado, redirecionando para login");
+      navigate('/login');
+      return;
     }
-  }, [user]);
+
+    // Verificar se o token existe no localStorage
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      console.log("Token não encontrado, redirecionando para login");
+      navigate('/login');
+      return;
+    }
+
+    // Configurar o token para todas as requisições
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+    // Carregar o perfil
+    loadProfile();
+  }, [isAuthenticated, user]);
 
   const loadProfile = async () => {
     try {
-      if (!user?.id) {
-        navigate('/login');
-        return;
+      console.log("Carregando perfil do agente cultural...");
+      setLoading(true);
+      setError(null);
+      
+      const profileData = await agentProfileService.getProfile();
+      console.log("Perfil carregado:", profileData);
+      
+      // Verificar se é um perfil vazio (novo)
+      if (!profileData.userId) {
+        console.log("Perfil novo detectado, será salvo ao submeter o formulário");
+        // Não define mensagem de erro para perfis novos
       }
-
-      const profileData = await agentProfileService.getProfileByUserId(user.id);
+      
       setProfile(profileData);
     } catch (error) {
+      console.error("Erro ao carregar perfil:", error);
+      
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Erro ao carregar perfil');
+        setError('Erro ao carregar perfil do agente cultural. Por favor, tente novamente mais tarde.');
       }
     } finally {
       setLoading(false);
@@ -56,11 +81,15 @@ export const AgentProfilePage: React.FC = () => {
       setError(null);
       setSuccess(null);
 
+      console.log("Salvando perfil do agente cultural:", values);
+      
       // Se já existe um perfil, atualiza. Senão, cria um novo.
       const updatedProfile = profile?.userId
         ? await agentProfileService.updateProfile(profile.userId, values)
         : await agentProfileService.saveProfile({ ...values, userId: user?.id });
-
+      
+      console.log("Perfil salvo com sucesso:", updatedProfile);
+      
       setProfile(updatedProfile);
       setSuccess('Perfil salvo com sucesso!');
 
@@ -69,10 +98,12 @@ export const AgentProfilePage: React.FC = () => {
         navigate('/dashboard');
       }, 2000);
     } catch (error) {
+      console.error("Erro ao salvar perfil:", error);
+      
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Erro ao salvar perfil');
+        setError('Erro ao salvar perfil do agente cultural. Por favor, tente novamente mais tarde.');
       }
     } finally {
       setLoading(false);
