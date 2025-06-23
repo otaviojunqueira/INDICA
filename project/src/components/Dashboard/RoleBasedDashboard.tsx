@@ -60,7 +60,7 @@ const getStatusText = (status: string): string => {
   }
 };
 
-export const RoleBasedDashboard: React.FC<RoleBasedDashboardProps> = ({ role, userName }) => {
+const RoleBasedDashboard: React.FC<RoleBasedDashboardProps> = ({ role, userName }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [openNotices, setOpenNotices] = useState<Notice[]>([]);
@@ -572,3 +572,5 @@ export const RoleBasedDashboard: React.FC<RoleBasedDashboardProps> = ({ role, us
       return renderErrorMessage(`Papel do usuário não suportado: ${role}`);
   }
 }; 
+
+export default RoleBasedDashboard;

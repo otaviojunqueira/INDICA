@@ -59,7 +59,7 @@ interface NewCulturalGroupData {
   cnpj: string;
 }
 
-export const CulturalGroupPage: React.FC = () => {
+const CulturalGroupPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const [tabValue, setTabValue] = useState(0);
@@ -677,3 +677,5 @@ export const CulturalGroupPage: React.FC = () => {
     </Container>
   );
 }; 
+
+export default CulturalGroupPage;

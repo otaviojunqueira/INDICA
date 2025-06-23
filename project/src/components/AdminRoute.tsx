@@ -1,28 +1,31 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { CircularProgress, Box } from '@mui/material';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
+/**
+ * Componente para proteger rotas que requerem acesso de administrador
+ */
 interface AdminRouteProps {
-  element: React.ReactNode;
+  children?: React.ReactNode;
   redirectTo?: string;
 }
 
-const AdminRoute: React.FC<AdminRouteProps> = ({ 
-  element, 
-  redirectTo = '/' 
+export const AdminRoute: React.FC<AdminRouteProps> = ({ 
+  children, 
+  redirectTo = '/dashboard' 
 }) => {
-  const { isAdmin, loading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const isAdmin = user?.role === 'admin';
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (isLoading) {
+    return <div>Carregando...</div>;
   }
 
-  return isAdmin ? <>{element}</> : <Navigate to={redirectTo} />;
+  if (!isAuthenticated || !isAdmin) {
+    return <Navigate to={redirectTo} />;
+  }
+
+  return <>{children || <Outlet />}</>;
 };
 
 export default AdminRoute; 

@@ -23,7 +23,7 @@ import {
   CircularProgress,
   InputAdornment
 } from '@mui/material';
-import { FileUpload } from '../components/Upload/FileUpload';
+import FileUpload from '../components/Upload/FileUpload';
 import { useAuthStore } from '../store/authStore';
 import { mockNotices as notices } from '../mocks/data';
 import { Notice } from '../types';
@@ -72,7 +72,7 @@ interface TeamMember {
   experience: string;
 }
 
-export const ApplicationForm: React.FC = () => {
+const ApplicationForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -886,3 +886,5 @@ export const ApplicationForm: React.FC = () => {
     </Container>
   );
 }; 
+
+export default ApplicationForm;

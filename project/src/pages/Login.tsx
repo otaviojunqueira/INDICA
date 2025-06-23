@@ -5,16 +5,16 @@ import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { Button } from '../components/UI/Button';
-import { Card } from '../components/UI/Card';
-import { api } from '../config/axios';
+import Button from '../components/UI/Button';
+import Card from '../components/UI/Card';
+import api from '../config/axios';
 
 interface LoginForm {
   cpfCnpj: string;
   password: string;
 }
 
-export const Login: React.FC = () => {
+const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
@@ -163,3 +163,5 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+
+export default Login;

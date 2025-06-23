@@ -2,7 +2,7 @@ import React from 'react';
 import { Container, Typography, Button, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-export const NotFound: React.FC = () => {
+const NotFound: React.FC = () => {
   const navigate = useNavigate();
 
   return (
@@ -31,4 +31,6 @@ export const NotFound: React.FC = () => {
       </Box>
     </Container>
   );
-}; 
+};
+
+export default NotFound; 

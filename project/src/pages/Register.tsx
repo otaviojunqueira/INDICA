@@ -5,8 +5,8 @@ import { Eye, EyeOff, UserPlus, User, Building } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import { Button } from '../components/UI/Button';
-import { Card } from '../components/UI/Card';
+import Button from '../components/UI/Button';
+import Card from '../components/UI/Card';
 
 interface RegisterForm {
   name: string;
@@ -19,7 +19,7 @@ interface RegisterForm {
   terms: boolean;
 }
 
-export const Register: React.FC = () => {
+const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -312,3 +312,5 @@ export const Register: React.FC = () => {
     </div>
   );
 };
+
+export default Register;

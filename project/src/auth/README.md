@@ -1,20 +1,19 @@
 # Autenticação
 
-A autenticação neste projeto é gerenciada pelo Zustand (store/authStore.ts) em vez de usar Context API.
+Este diretório estava contendo a implementação de autenticação baseada em Context API, mas agora foi substituída pelo gerenciamento de estado com Zustand.
 
-O código original que usava Context API foi migrado para uma solução baseada em Zustand para:
-1. Melhor performance
-2. Menor acoplamento
-3. Facilidade de teste
-4. Melhor portabilidade
+A lógica de autenticação atual está implementada no arquivo `src/store/authStore.ts` utilizando Zustand.
 
-Para usar a autenticação, importe useAuthStore:
+## Uso
 
 ```tsx
 import { useAuthStore } from '../store/authStore';
 
-// No seu componente
-const { user, isAuthenticated, login, logout } = useAuthStore();
+function MinhaComponente() {
+  const { user, isAuthenticated, login, logout } = useAuthStore();
+  
+  // Utilizar os estados e funções de autenticação
+}
 ```
 
 ## API de Autenticação

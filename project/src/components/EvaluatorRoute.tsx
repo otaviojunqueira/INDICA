@@ -1,29 +1,33 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { CircularProgress, Box } from '@mui/material';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
+/**
+ * Componente para proteger rotas que requerem acesso de parecerista (avaliador)
+ */
 interface EvaluatorRouteProps {
-  element: React.ReactNode;
+  children?: React.ReactNode;
   redirectTo?: string;
 }
 
-const EvaluatorRoute: React.FC<EvaluatorRouteProps> = ({ 
-  element, 
-  redirectTo = '/' 
+export const EvaluatorRoute: React.FC<EvaluatorRouteProps> = ({ 
+  children, 
+  redirectTo = '/dashboard' 
 }) => {
-  const { isEvaluator, isAdmin, loading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const isEvaluator = user?.role === 'evaluator';
+  const isAdmin = user?.role === 'admin';
+  const hasAccess = isEvaluator || isAdmin; // Admins também podem acessar rotas de avaliador
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (isLoading) {
+    return <div>Carregando...</div>;
   }
 
-  // Permitir acesso tanto para avaliadores quanto para administradores
-  return (isEvaluator || isAdmin) ? <>{element}</> : <Navigate to={redirectTo} />;
+  if (!isAuthenticated || !hasAccess) {
+    return <Navigate to={redirectTo} />;
+  }
+
+  return <>{children || <Outlet />}</>;
 };
 
 export default EvaluatorRoute; 

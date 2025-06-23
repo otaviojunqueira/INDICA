@@ -9,10 +9,13 @@ export const api = axios.create({
 });
 
 // Inicializar o token de autenticação
-const token = localStorage.getItem('auth_token');
-if (token) {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
+const initializeAxios = () => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+};
 
 // Interceptor para tratar respostas
 api.interceptors.response.use(
@@ -49,5 +52,8 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Inicializar
+initializeAxios();
 
 export default api;

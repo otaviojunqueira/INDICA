@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Calendar, 
   FileText, 
-  Download, 
-  ChevronLeft, 
-  AlertTriangle, 
   Clock, 
   CheckCircle, 
   XCircle, 
-  AlertCircle,
-  MessageCircle,
-  Edit,
-  Trash2,
-  ArrowRight
+  AlertCircle
 } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import {
   Container,
@@ -46,7 +37,7 @@ interface Application {
   requestedAmount: number;
   category: string;
   formData: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
   files: {
     id: string;
@@ -60,15 +51,15 @@ interface Application {
     score: number;
     comment: string;
     date: Date;
+    status?: string;
   }[];
   appealDeadline?: Date;
 }
 
-export const ApplicationDetail: React.FC = () => {
+const ApplicationDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthStore();
   const navigate = useNavigate();
 
   // Função para formatar data
@@ -88,19 +79,19 @@ export const ApplicationDetail: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-gray-200 text-gray-800';
+        return 'default';
       case 'submitted':
-        return 'bg-blue-100 text-blue-800';
+        return 'info';
       case 'under_evaluation':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'rejected':
-        return 'bg-red-100 text-red-800';
+        return 'error';
       case 'in_appeal':
-        return 'bg-purple-100 text-purple-800';
+        return 'secondary';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'default';
     }
   };
 
@@ -426,8 +417,8 @@ export const ApplicationDetail: React.FC = () => {
                       {evaluation.evaluatorName}
                     </Typography>
                     <Chip 
-                      label={translateStatus(evaluation.status)}
-                      color={getStatusColor(evaluation.status)}
+                      label={evaluation.status ? translateStatus(evaluation.status) : 'Pendente'}
+                      color={evaluation.status ? getStatusColor(evaluation.status) : 'default'}
                       size="small"
                     />
                   </Box>
@@ -459,3 +450,5 @@ export const ApplicationDetail: React.FC = () => {
     </Container>
   );
 }; 
+
+export default ApplicationDetail;

@@ -8,7 +8,7 @@ interface HeaderProps {
   setIsMenuOpen: (open: boolean) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
+const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -389,3 +389,5 @@ export const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => 
     </header>
   );
 };
+
+export default Header;

@@ -1,28 +1,33 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { CircularProgress, Box } from '@mui/material';
+import { useAuthStore } from '../store/authStore';
+import { Navigate, Outlet } from 'react-router-dom';
 
+/**
+ * Componente para proteger rotas que requerem autenticação
+ */
 interface PrivateRouteProps {
-  element: React.ReactNode;
+  children?: React.ReactNode;
   redirectTo?: string;
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
-  element, 
+export const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
+  children, 
   redirectTo = '/login' 
 }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuthStore();
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+  if (isLoading) {
+    // Exibir um componente de carregamento enquanto verifica a autenticação
+    return <div>Carregando...</div>;
   }
 
-  return isAuthenticated ? <>{element}</> : <Navigate to={redirectTo} />;
+  if (!isAuthenticated) {
+    // Redirecionar para a página de login se não estiver autenticado
+    return <Navigate to={redirectTo} />;
+  }
+
+  // Renderiza o conteúdo protegido
+  return <>{children || <Outlet />}</>;
 };
 
 export default PrivateRoute; 

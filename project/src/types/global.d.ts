@@ -1,8 +1,18 @@
 declare namespace NodeJS {
   interface ProcessEnv {
-    REACT_APP_API_URL: string;
-    REACT_APP_NAME: string;
-    REACT_APP_DESCRIPTION: string;
+    NODE_ENV: 'development' | 'production' | 'test';
+  }
+}
+
+// Extensão do ImportMeta para ambiente Vite
+interface ImportMeta {
+  env: {
+    VITE_API_URL: string;
+    VITE_MAX_FILE_SIZE: string;
+    VITE_MAX_PORTFOLIO_ITEMS: string;
+    VITE_CACHE_TTL: string;
+    VITE_API_TIMEOUT: string;
+    [key: string]: string | boolean | undefined;
   }
 }
 
@@ -16,7 +26,7 @@ interface AuthUser {
 }
 
 // Tipos para respostas da API
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -77,19 +87,10 @@ declare module '*.webp' {
   export default content;
 }
 
-// Variáveis de ambiente
-interface ProcessEnv {
-  NODE_ENV: 'development' | 'production' | 'test';
-  REACT_APP_API_URL: string;
-  REACT_APP_MAX_FILE_SIZE: string;
-  REACT_APP_MAX_PORTFOLIO_ITEMS: string;
-  REACT_APP_CACHE_TTL: string;
-  REACT_APP_API_TIMEOUT: string;
-}
-
 // Tipos globais da aplicação
 declare global {
   interface Window {
-    // Adicione propriedades globais do objeto window aqui
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    __REDUX_DEVTOOLS_EXTENSION__?: any;
   }
 } 

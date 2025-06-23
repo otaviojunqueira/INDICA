@@ -132,7 +132,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const ApplicationsPage: React.FC = () => {
+const ApplicationsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   
@@ -417,3 +417,5 @@ export const ApplicationsPage: React.FC = () => {
     </Container>
   );
 }; 
+
+export default ApplicationsPage;

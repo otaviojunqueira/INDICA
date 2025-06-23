@@ -118,7 +118,7 @@ const workRegimes = [
   'Outro'
 ];
 
-export const ProfileForm: React.FC<ProfileFormProps> = ({
+const ProfileForm: React.FC<ProfileFormProps> = ({
   initialValues,
   onSubmit,
   isLoading = false
@@ -519,3 +519,5 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     </Formik>
   );
 }; 
+
+export default ProfileForm;

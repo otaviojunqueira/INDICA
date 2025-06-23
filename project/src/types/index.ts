@@ -245,7 +245,7 @@ export interface Report {
   type: 'notice' | 'application' | 'evaluation' | 'user';
   createdAt: string;
   createdBy: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 export interface ApiResponse<T> {

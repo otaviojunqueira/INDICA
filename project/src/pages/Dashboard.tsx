@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../store/authStore';
-import { RoleBasedDashboard } from '../components/Dashboard/RoleBasedDashboard';
+import RoleBasedDashboard from '../components/Dashboard/RoleBasedDashboard';
 
-export const Dashboard: React.FC = () => {
+const Dashboard: React.FC = () => {
   const { user } = useAuthStore();
 
   return (
@@ -27,8 +27,15 @@ export const Dashboard: React.FC = () => {
         </motion.div>
 
         {/* Conteúdo específico para cada tipo de usuário */}
-        <RoleBasedDashboard user={user} />
+        {user && (
+          <RoleBasedDashboard 
+            role={user.role as 'admin' | 'agent' | 'evaluator'} 
+            userName={user.name || 'Usuário'}
+          />
+        )}
       </div>
     </div>
   );
 };
+
+export default Dashboard;

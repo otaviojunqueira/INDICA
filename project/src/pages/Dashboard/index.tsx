@@ -13,34 +13,49 @@ import {
   ListItemText,
   ListItemIcon,
   Chip,
-  CircularProgress
+  CircularProgress,
+  Card,
+  CardContent,
+  CardHeader,
+  Avatar
 } from '@mui/material';
 import {
   Person,
   LibraryBooks,
   Group,
   Description,
-  Notifications
+  Notifications,
+  CheckCircle as CheckCircleIcon,
+  Info as InfoIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
-import { RoleBasedDashboard } from '../../components/Dashboard/RoleBasedDashboard';
+import RoleBasedDashboard from '../../components/Dashboard/RoleBasedDashboard';
+import { Link } from 'react-router-dom';
 
 interface Notification {
   id: string;
   title: string;
   read: boolean;
   date: Date;
+  type: string;
 }
 
 // Esta é a página principal do Dashboard que exibirá conteúdo diferente baseado no papel do usuário
-export const Dashboard: React.FC = () => {
+const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuthStore();
   const [notifications] = useState<Notification[]>([
-    { id: '1', title: 'Novo edital disponível', read: false, date: new Date() },
-    { id: '2', title: 'Seu perfil está incompleto', read: false, date: new Date() },
-    { id: '3', title: 'Inscrição enviada com sucesso', read: true, date: new Date() }
+    { id: '1', title: 'Novo edital disponível', read: false, date: new Date(), type: 'info' },
+    { id: '2', title: 'Seu perfil está incompleto', read: false, date: new Date(), type: 'warning' },
+    { id: '3', title: 'Inscrição enviada com sucesso', read: true, date: new Date(), type: 'success' }
   ]);
+  const [activeNotices, setActiveNotices] = useState<number>(0);
+  const [myApplications, setMyApplications] = useState<number>(0);
+  const [pendingEvaluations, setPendingEvaluations] = useState<number>(0);
+  const [dataLoading, setDataLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // Redirecionar se não estiver autenticado
@@ -48,6 +63,22 @@ export const Dashboard: React.FC = () => {
       navigate('/login');
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  useEffect(() => {
+    // Aqui você carregaria dados do servidor
+    // Vamos simular com um timeout
+    setTimeout(() => {
+      setActiveNotices(8);
+      setMyApplications(3);
+      setNotifications([
+        { id: '1', title: 'Sua inscrição foi recebida', type: 'success', date: new Date() },
+        { id: '2', title: 'Novo edital disponível', type: 'info', date: new Date() },
+        { id: '3', title: 'Prazo de inscrição expirando', type: 'warning', date: new Date() }
+      ]);
+      setPendingEvaluations(5);
+      setDataLoading(false);
+    }, 1500);
+  }, []);
 
   // Função para navegar para diferentes seções
   const navigateTo = (path: string) => () => {
@@ -112,6 +143,148 @@ export const Dashboard: React.FC = () => {
     id: user.id 
   });
 
+  const getIconByType = (type: string) => {
+    switch (type) {
+      case 'success': return <CheckCircleIcon color="success" />;
+      case 'info': return <InfoIcon color="info" />;
+      case 'warning': return <WarningIcon color="warning" />;
+      case 'error': return <ErrorIcon color="error" />;
+      default: return <InfoIcon color="info" />;
+    }
+  };
+
+  // Conteúdo específico baseado no papel do usuário
+  let roleSpecificContent;
+
+  if (user.role === 'admin') {
+    roleSpecificContent = (
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Gerenciamento de Editais" />
+            <Divider />
+            <CardContent>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Button 
+                  variant="contained" 
+                  component={Link} 
+                  to="/admin/create-notice"
+                  startIcon={<DescriptionIcon />}
+                >
+                  Criar Novo Edital
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  component={Link} 
+                  to="/admin/notices"
+                  startIcon={<AssignmentIcon />}
+                >
+                  Gerenciar Editais
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader title="Relatórios e Estatísticas" />
+            <Divider />
+            <CardContent>
+              <Typography paragraph>
+                Acesse relatórios detalhados sobre inscrições, avaliações e distribuição de recursos.
+              </Typography>
+              <Button 
+                variant="contained" 
+                component={Link} 
+                to="/admin/reports"
+              >
+                Ver Relatórios
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    );
+  } else if (user.role === 'agent') {
+    roleSpecificContent = (
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader 
+              title="Minhas Inscrições" 
+              subheader={`Você tem ${myApplications} inscrições`}
+            />
+            <Divider />
+            <CardContent>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Button 
+                  variant="contained" 
+                  component={Link} 
+                  to="/applications"
+                >
+                  Ver Minhas Inscrições
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader 
+              title="Meu Perfil Cultural" 
+              action={
+                <Chip 
+                  label="Incompleto" 
+                  color="warning" 
+                  size="small" 
+                />
+              }
+            />
+            <Divider />
+            <CardContent>
+              <Typography paragraph>
+                Complete seu perfil para aumentar suas chances de aprovação nos editais.
+              </Typography>
+              <Button 
+                variant="contained" 
+                component={Link} 
+                to="/profile"
+              >
+                Completar Perfil
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    );
+  } else if (user.role === 'evaluator') {
+    roleSpecificContent = (
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardHeader 
+              title="Avaliações Pendentes" 
+              subheader={`${pendingEvaluations} avaliações aguardando`}
+            />
+            <Divider />
+            <CardContent>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Button 
+                  variant="contained" 
+                  component={Link} 
+                  to="/evaluator/evaluations"
+                  color="primary"
+                >
+                  Continuar Avaliações
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    );
+  }
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Grid container spacing={3}>
@@ -150,7 +323,7 @@ export const Dashboard: React.FC = () => {
               {notifications.map((notification) => (
                 <ListItem key={notification.id} button>
                   <ListItemIcon>
-                    <Notifications color={notification.read ? 'disabled' : 'primary'} />
+                    {getIconByType(notification.type)}
                   </ListItemIcon>
                   <ListItemText
                     primary={notification.title}
@@ -221,9 +394,14 @@ export const Dashboard: React.FC = () => {
             </Grid>
           </Paper>
         </Grid>
+
+        {/* Conteúdo específico de role */}
+        <Grid item xs={12}>
+          {roleSpecificContent}
+        </Grid>
       </Grid>
     </Container>
   );
-}; 
+};
 
 export default Dashboard; 

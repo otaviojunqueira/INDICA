@@ -25,8 +25,8 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
-import { evaluationService, applicationService } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { mockApplicationService, mockEvaluationService } from '../../mocks/mockServices';
+import { useAuthStore } from '../../store/authStore';
 
 interface CriteriaScore {
   criteriaId: string;
@@ -38,7 +38,9 @@ interface CriteriaScore {
 
 interface Evaluation {
   _id: string;
-  applicationId: any;
+  applicationId: {
+    _id: string;
+  };
   evaluatorId: string;
   criteriaScores: CriteriaScore[];
   totalScore: number;
@@ -49,13 +51,19 @@ interface Evaluation {
 
 interface Application {
   _id: string;
-  noticeId: any;
-  userId: any;
+  noticeId: {
+    _id: string;
+    title: string;
+  };
+  userId: {
+    _id: string;
+    name: string;
+  };
   projectName: string;
   projectDescription: string;
   requestedAmount: number;
   status: string;
-  formData: Record<string, any>;
+  formData: Record<string, unknown>;
   documents: Array<{
     name: string;
     path: string;
@@ -66,7 +74,7 @@ interface Application {
 const EvaluationPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
@@ -87,18 +95,22 @@ const EvaluationPage: React.FC = () => {
         setError(null);
         
         // Carregar a avaliação
-        const evaluationData = await evaluationService.getById(id as string);
-        setEvaluation(evaluationData);
+        if (!id) return;
+        
+        const evaluationData = await mockEvaluationService.getById(id);
+        setEvaluation(evaluationData as unknown as Evaluation);
         
         // Carregar a inscrição associada
-        const applicationData = await applicationService.getById(evaluationData.applicationId._id);
-        setApplication(applicationData);
+        const appId = evaluationData.applicationId._id;
+        const applicationData = await mockApplicationService.getApplication(appId);
+        setApplication(applicationData as unknown as Application);
         
         // Verificar se todos os critérios já foram avaliados
         checkAllCriteriaEvaluated(evaluationData.criteriaScores);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Erro ao carregar dados:', err);
-        setError(err.response?.data?.message || 'Ocorreu um erro ao carregar os dados');
+        const errorMessage = err instanceof Error ? err.message : 'Ocorreu um erro ao carregar os dados';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -118,7 +130,7 @@ const EvaluationPage: React.FC = () => {
   };
   
   // Atualizar pontuação de um critério
-  const handleScoreChange = (criteriaId: string) => (event: Event, newValue: number | number[]) => {
+  const handleScoreChange = (criteriaId: string) => (_event: Event, newValue: number | number[]) => {
     if (!evaluation) return;
     
     const updatedScores = evaluation.criteriaScores.map(criteria => {
@@ -177,17 +189,24 @@ const EvaluationPage: React.FC = () => {
       setSaving(true);
       setError(null);
       
-      await evaluationService.update(evaluation._id, {
-        criteriaScores: evaluation.criteriaScores,
+      // Preparar critérios para o formato esperado pela API
+      const criteriaData = evaluation.criteriaScores.map(criteria => ({
+        criteriaId: criteria.criteriaId,
+        score: criteria.score !== null ? criteria.score : 0,
+        comments: criteria.comments
+      }));
+      
+      await mockEvaluationService.update(evaluation._id, {
+        criteriaScores: criteriaData,
         comments: evaluation.comments,
-        status: 'in_progress'
+        status: 'in_progress' as 'pending' | 'completed' // Tratamento de tipo
       });
       
       setSuccess('Avaliação salva com sucesso');
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erro ao salvar avaliação:', err);
-      setError(err.response?.data?.message || 'Ocorreu um erro ao salvar a avaliação');
+      setError(err instanceof Error ? err.message : 'Ocorreu um erro ao salvar a avaliação');
     } finally {
       setSaving(false);
     }
@@ -212,7 +231,7 @@ const EvaluationPage: React.FC = () => {
       setError(null);
       setConfirmDialogOpen(false);
       
-      await evaluationService.update(evaluation._id, {
+      await mockEvaluationService.update(evaluation._id, {
         criteriaScores: evaluation.criteriaScores,
         comments: evaluation.comments,
         status: 'completed'
@@ -535,4 +554,5 @@ const EvaluationPage: React.FC = () => {
   );
 };
 
+// Exportação padrão
 export default EvaluationPage; 

@@ -16,10 +16,10 @@ import {
   IconButton,
   Divider,
   FormHelperText,
+  SelectChangeEvent
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { noticeService } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -38,7 +38,6 @@ interface EvaluationCriteria {
 
 const CreateNoticePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [entities, setEntities] = useState<Entity[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +110,7 @@ const CreateNoticePage: React.FC = () => {
     });
   };
 
-  const handleSelectChange = (e: any) => {
+  const handleSelectChange = (e: SelectChangeEvent) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -284,8 +283,8 @@ const CreateNoticePage: React.FC = () => {
         title: formData.title,
         description: formData.description,
         entityId: formData.entityId,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
+        startDate: formData.startDate ? formData.startDate : new Date(),
+        endDate: formData.endDate ? formData.endDate : new Date(),
         totalAmount: Number(formData.totalAmount),
         maxApplicationValue: Number(formData.maxApplicationValue),
         minApplicationValue: Number(formData.minApplicationValue),
@@ -293,12 +292,14 @@ const CreateNoticePage: React.FC = () => {
         requirements: formData.requirements,
         documents: formData.documents,
         evaluationCriteria: formData.evaluationCriteria,
+        budget: Number(formData.totalAmount)
       };
 
       await noticeService.create(noticeData);
       navigate('/admin/notices');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ocorreu um erro ao criar o edital');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'Ocorreu um erro ao criar o edital');
     } finally {
       setLoading(false);
     }
@@ -749,4 +750,5 @@ const CreateNoticePage: React.FC = () => {
   );
 };
 
+// Exportação padrão
 export default CreateNoticePage; 

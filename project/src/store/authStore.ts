@@ -81,9 +81,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
           response = await authService.login(cpfCnpj, password);
         } else {
           const apiResponse = await axios.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, {
-            cpfCnpj,
-            password
-          });
+          cpfCnpj,
+          password
+        });
           response = apiResponse.data;
         }
         
@@ -175,7 +175,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
           }
         }
         
-        const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token');
         const userData = localStorage.getItem('user_data');
         
         console.log('Token encontrado:', !!token);
@@ -184,11 +184,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
         if (!token || !userData) {
           console.warn('Token ou dados de usuário ausentes');
           set({ user: null, isAuthenticated: false });
-          return false;
-        }
-        
-        try {
-          set({ isLoading: true });
+        return false;
+      }
+
+      try {
+        set({ isLoading: true });
           
           // Primeiro tenta carregar do localStorage
           const storedUser = JSON.parse(userData);
@@ -231,7 +231,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
               console.log('Usuário do localStorage usado como fallback');
               set({ user: storedUser, isAuthenticated: true, isLoading: false });
               console.groupEnd();
-              return true;
+        return true;
             }
           } catch (e) {
             console.error('Não foi possível usar dados do localStorage como fallback:', e);

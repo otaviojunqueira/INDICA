@@ -27,9 +27,10 @@ import {
   Group as GroupIcon,
   Description as DescriptionIcon,
   Info as InfoIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/auth';
+import { useAuthStore } from '../../store/authStore';
 
 const drawerWidth = 240;
 
@@ -37,12 +38,12 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuthStore();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -59,8 +60,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     setAnchorEl(null);
   };
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -131,9 +132,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 onClick={handleMenuOpen}
                 size="small"
                 sx={{ ml: 2 }}
-                aria-controls={Boolean(anchorEl) ? 'account-menu' : undefined}
+                aria-controls={anchorEl ? 'account-menu' : undefined}
                 aria-haspopup="true"
-                aria-expanded={Boolean(anchorEl) ? 'true' : undefined}
+                aria-expanded={anchorEl ? 'true' : undefined}
               >
                 <Avatar sx={{ width: 32, height: 32 }}>
                   {user.name?.charAt(0).toUpperCase()}
@@ -142,7 +143,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <Menu
                 anchorEl={anchorEl}
                 id="account-menu"
-                open={Boolean(anchorEl)}
+                open={!!anchorEl}
                 onClose={handleMenuClose}
                 onClick={handleMenuClose}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -157,7 +158,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Divider />
                 <MenuItem onClick={handleSignOut}>
                   <ListItemIcon>
-                    <PersonIcon fontSize="small" />
+                    <LogoutIcon fontSize="small" />
                   </ListItemIcon>
                   Sair
                 </MenuItem>
@@ -217,3 +218,5 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     </Box>
   );
 }; 
+
+export default MainLayout;

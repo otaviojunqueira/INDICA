@@ -7,7 +7,7 @@ interface CardProps {
   hover?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ 
+const Card: React.FC<CardProps> = ({ 
   children, 
   className = '', 
   hover = false 
@@ -26,3 +26,5 @@ export const Card: React.FC<CardProps> = ({
     </motion.div>
   );
 };
+
+export default Card;

@@ -4,14 +4,14 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { Button } from '../components/UI/Button';
-import { Card } from '../components/UI/Card';
+import Button from '../components/UI/Button';
+import Card from '../components/UI/Card';
 
 interface ForgotPasswordForm {
   email: string;
 }
 
-export const ForgotPassword: React.FC = () => {
+const ForgotPassword: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -113,3 +113,5 @@ export const ForgotPassword: React.FC = () => {
     </div>
   );
 }; 
+
+export default ForgotPassword;

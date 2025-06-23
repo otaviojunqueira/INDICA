@@ -9,12 +9,12 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';
-import { ProfileForm } from '../../components/AgentProfile/ProfileForm';
+import ProfileForm from '../../components/AgentProfile/ProfileForm';
 import { agentProfileService } from '../../services/agentProfile.service';
 import { IAgentProfile } from '../../types';
-import { api } from '../../config/axios';
+import api from '../../config/axios';
 
-export const AgentProfilePage: React.FC = () => {
+const AgentProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   
@@ -157,4 +157,6 @@ export const AgentProfilePage: React.FC = () => {
       </Paper>
     </Container>
   );
-}; 
+};
+
+export default AgentProfilePage; 

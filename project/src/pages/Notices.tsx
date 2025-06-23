@@ -16,7 +16,7 @@ interface Notice {
   status: 'draft' | 'open' | 'evaluation' | 'result' | 'closed';
 }
 
-export const Notices: React.FC = () => {
+const Notices: React.FC = () => {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -321,3 +321,5 @@ export const Notices: React.FC = () => {
     </div>
   );
 }; 
+
+export default Notices;

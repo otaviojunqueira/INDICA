@@ -3,30 +3,38 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 // Páginas públicas
-import { Login } from '../pages/Login';
-import { Register } from '../pages/Register';
-import { Home } from '../pages/Home';
-import { About } from '../pages/About';
-import { NotFound } from '../pages/NotFound';
+import Login from '../pages/Login';
+import Register from '../pages/Register';
+import Home from '../pages/Home';
+import About from '../pages/About';
+import NotFound from '../pages/NotFound';
 
 // Páginas protegidas - Dashboard e Perfil
-import { Dashboard } from '../pages/Dashboard';
-import { AgentProfilePage } from '../pages/AgentProfile';
+import Dashboard from '../pages/Dashboard';
+import AgentProfilePage from '../pages/AgentProfile';
 
 // Páginas de coletivos culturais
-import { CulturalGroupPage } from '../pages/CulturalGroup';
+import CulturalGroupPage from '../pages/CulturalGroup';
 
 // Páginas de editais
-import { NoticeList } from '../pages/Notice/List';
-import { NoticeDetails } from '../pages/Notice/Details';
+import NoticeList from '../pages/Notice/List';
+import NoticeDetails from '../pages/Notice/Details';
 
 // Páginas de inscrições
-import { ApplicationsPage } from '../pages/ApplicationsPage';
-import { ApplicationDetail } from '../pages/ApplicationDetail';
-import { ApplicationForm } from '../pages/ApplicationForm';
+import ApplicationsPage from '../pages/ApplicationsPage';
+import ApplicationDetail from '../pages/ApplicationDetail';
+import ApplicationForm from '../pages/ApplicationForm';
 
 // Páginas de administração
-import { ReportsPage } from '../pages/ReportsPage';
+import ReportsPage from '../pages/ReportsPage';
+
+// Rotas de Admin
+import CreateNoticePage from '../pages/admin/CreateNoticePage';
+import DocumentsPage from '../pages/admin/DocumentsPage';
+
+// Rotas de Parecerista
+import EvaluationPage from '../pages/evaluator/EvaluationPage';
+import EvaluationListPage from '../pages/evaluator/EvaluationListPage';
 
 // Componente de rota protegida
 const PrivateRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -91,6 +99,14 @@ export const AppRoutes: React.FC = () => {
       
       {/* Notificações */}
       <Route path="/notifications" element={<PrivateRouteWrapper><Dashboard /></PrivateRouteWrapper>} />
+
+      {/* Rotas de Admin */}
+      <Route path="/admin/create-notice" element={<PrivateRouteWrapper><CreateNoticePage /></PrivateRouteWrapper>} />
+      <Route path="/admin/documents" element={<PrivateRouteWrapper><DocumentsPage /></PrivateRouteWrapper>} />
+
+      {/* Rotas de Parecerista */}
+      <Route path="/evaluator/evaluations" element={<PrivateRouteWrapper><EvaluationListPage /></PrivateRouteWrapper>} />
+      <Route path="/evaluator/evaluation/:id" element={<PrivateRouteWrapper><EvaluationPage /></PrivateRouteWrapper>} />
 
       {/* Rota 404 */}
       <Route path="*" element={<NotFound />} />

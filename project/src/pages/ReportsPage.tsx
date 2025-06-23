@@ -9,8 +9,8 @@ import {
   Calendar,
   FileText
 } from 'lucide-react';
-import { Card } from '../components/UI/Card';
-import { Button } from '../components/UI/Button';
+import Card from '../components/UI/Card';
+import Button from '../components/UI/Button';
 
 // Componente fictício de gráfico de barras
 const BarChartComponent = () => (
@@ -42,7 +42,7 @@ const LineChartComponent = () => (
   </div>
 );
 
-export const ReportsPage: React.FC = () => {
+const ReportsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('month');
 
@@ -247,3 +247,5 @@ export const ReportsPage: React.FC = () => {
     </div>
   );
 }; 
+
+export default ReportsPage;

@@ -38,7 +38,7 @@ const VisuallyHiddenInput = styled('input')({
   width: 1,
 });
 
-export const FileUpload: React.FC<FileUploadProps> = ({
+const FileUpload: React.FC<FileUploadProps> = ({
   onUpload,
   maxFiles = 5,
   maxSize = 5,
@@ -211,3 +211,5 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     </Box>
   );
 }; 
+
+export default FileUpload;
