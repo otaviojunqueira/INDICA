@@ -23,8 +23,8 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
 
   const publicNavigation = [
     { name: 'Início', href: '#home' },
-    { name: 'Sobre', href: '#about' },
     { name: 'Benefícios', href: '#benefits' },
+    { name: 'Sobre', href: '#about' },
     { name: 'Como Funciona', href: '#how-it-works' },
     { name: 'Contato', href: '#contact' },
   ];
