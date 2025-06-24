@@ -102,18 +102,5 @@ npm install
 npm start
 ```
 
-## Usuários de Teste
-
-- **Administrador**: admin@indica.com / senha123
-- **Agente Cultural**: agente@cultura.com / senha123
-- **Avaliador**: avaliador@indica.com / senha123
-
-## Próximos Passos
-- Implementação de sistema de notificações
-- Integração com serviços de pagamento
-- Módulo de prestação de contas
-- Aplicativo mobile
-- Integração com sistemas governamentais
-
 ## Licença
 Este projeto está sob a licença MIT. 
