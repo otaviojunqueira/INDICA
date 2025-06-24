@@ -26,7 +26,6 @@ import {
   DialogActions,
 } from '@mui/material';
 import { mockApplicationService, mockEvaluationService } from '../../mocks/mockServices';
-import { useAuthStore } from '../../store/authStore';
 
 interface CriteriaScore {
   criteriaId: string;
@@ -37,9 +36,11 @@ interface CriteriaScore {
 }
 
 interface Evaluation {
-  _id: string;
-  applicationId: {
-    _id: string;
+  _id?: string;
+  id?: string;
+  applicationId: string | {
+    _id?: string;
+    id?: string;
   };
   evaluatorId: string;
   criteriaScores: CriteriaScore[];
@@ -74,7 +75,6 @@ interface Application {
 const EvaluationPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
@@ -101,7 +101,15 @@ const EvaluationPage: React.FC = () => {
         setEvaluation(evaluationData as unknown as Evaluation);
         
         // Carregar a inscrição associada
-        const appId = evaluationData.applicationId._id;
+        const appId = typeof evaluationData.applicationId === 'string' 
+          ? evaluationData.applicationId 
+          : evaluationData.applicationId && typeof evaluationData.applicationId === 'object' 
+            ? ('_id' in evaluationData.applicationId && evaluationData.applicationId._id) 
+              ? evaluationData.applicationId._id 
+              : ('id' in evaluationData.applicationId && evaluationData.applicationId.id)
+                ? evaluationData.applicationId.id
+                : ''
+            : '';
         const applicationData = await mockApplicationService.getApplication(appId);
         setApplication(applicationData as unknown as Application);
         
@@ -193,10 +201,12 @@ const EvaluationPage: React.FC = () => {
       const criteriaData = evaluation.criteriaScores.map(criteria => ({
         criteriaId: criteria.criteriaId,
         score: criteria.score !== null ? criteria.score : 0,
-        comments: criteria.comments
+        comments: criteria.comments,
+        name: criteria.name,
+        weight: criteria.weight
       }));
       
-      await mockEvaluationService.update(evaluation._id, {
+      await mockEvaluationService.update(evaluation._id || evaluation.id || '', {
         criteriaScores: criteriaData,
         comments: evaluation.comments,
         status: 'in_progress' as 'pending' | 'completed' // Tratamento de tipo
@@ -231,8 +241,17 @@ const EvaluationPage: React.FC = () => {
       setError(null);
       setConfirmDialogOpen(false);
       
-      await mockEvaluationService.update(evaluation._id, {
-        criteriaScores: evaluation.criteriaScores,
+      // Preparar critérios para o formato esperado pela API
+      const criteriaData = evaluation.criteriaScores.map(criteria => ({
+        criteriaId: criteria.criteriaId,
+        score: criteria.score !== null ? criteria.score : 0,
+        comments: criteria.comments,
+        name: criteria.name,
+        weight: criteria.weight
+      }));
+      
+      await mockEvaluationService.update(evaluation._id || evaluation.id || '', {
+        criteriaScores: criteriaData,
         comments: evaluation.comments,
         status: 'completed'
       });
@@ -241,9 +260,9 @@ const EvaluationPage: React.FC = () => {
       setTimeout(() => {
         navigate('/evaluator/evaluations');
       }, 2000);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erro ao finalizar avaliação:', err);
-      setError(err.response?.data?.message || 'Ocorreu um erro ao finalizar a avaliação');
+      setError(err instanceof Error ? err.message : 'Ocorreu um erro ao finalizar a avaliação');
     } finally {
       setSaving(false);
     }
@@ -360,8 +379,8 @@ const EvaluationPage: React.FC = () => {
             </Typography>
             {application.documents.length > 0 ? (
               <List dense>
-                {application.documents.map((doc, index) => (
-                  <ListItem key={index} disablePadding>
+                {application.documents.map((doc) => (
+                  <ListItem key={doc.path} disablePadding>
                     <ListItemText 
                       primary={doc.name}
                       secondary={`Enviado em ${new Date(doc.uploadedAt).toLocaleDateString('pt-BR')}`}
@@ -405,7 +424,7 @@ const EvaluationPage: React.FC = () => {
               Critérios de Avaliação
             </Typography>
             
-            {evaluation.criteriaScores.map((criteria, index) => (
+            {evaluation.criteriaScores.map((criteria) => (
               <Card key={criteria.criteriaId} variant="outlined" sx={{ mb: 3 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

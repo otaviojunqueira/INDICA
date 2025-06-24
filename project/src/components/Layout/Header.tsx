@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Bell, ChevronDown } from 'lucide-react';
+import { Menu, X, User, Bell, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 interface HeaderProps {

@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle
-} from 'lucide-react';
+// Removidas importações não utilizadas
 import toast from 'react-hot-toast';
 import {
   Container,
@@ -115,25 +109,7 @@ const ApplicationDetail: React.FC = () => {
     }
   };
 
-  // Função para obter o ícone do status
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return <FileText size={20} />;
-      case 'submitted':
-        return <CheckCircle size={20} />;
-      case 'under_evaluation':
-        return <Clock size={20} />;
-      case 'approved':
-        return <CheckCircle size={20} />;
-      case 'rejected':
-        return <XCircle size={20} />;
-      case 'in_appeal':
-        return <AlertCircle size={20} />;
-      default:
-        return <FileText size={20} />;
-    }
-  };
+  // Função removida por não estar sendo utilizada
 
   // Efeito para carregar a inscrição
   useEffect(() => {
@@ -206,25 +182,7 @@ const ApplicationDetail: React.FC = () => {
     fetchApplication();
   }, [id]);
 
-  // Função para lidar com a exclusão da inscrição (apenas para rascunhos)
-  const handleDelete = async () => {
-    if (!application || application.status !== 'draft') {
-      return;
-    }
-
-    if (window.confirm('Tem certeza que deseja excluir este rascunho? Esta ação não pode ser desfeita.')) {
-      try {
-        // Em produção, substituir por chamada real à API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        toast.success('Rascunho excluído com sucesso!');
-        navigate('/applications');
-      } catch (error) {
-        console.error('Erro ao excluir rascunho:', error);
-        toast.error('Erro ao excluir rascunho.');
-      }
-    }
-  };
+  // Função de exclusão removida por não estar sendo utilizada
 
   // Função para lidar com o envio de recurso
   const handleAppeal = () => {
@@ -351,28 +309,28 @@ const ApplicationDetail: React.FC = () => {
               Público-alvo
             </Typography>
             <Typography variant="body1" paragraph>
-              {application.formData.targetAudience}
+              {String(application.formData.targetAudience || '')}
             </Typography>
             
             <Typography variant="subtitle1" gutterBottom>
               Área Cultural
             </Typography>
             <Typography variant="body1" paragraph>
-              {application.formData.culturalArea}
+              {String(application.formData.culturalArea || '')}
             </Typography>
             
             <Typography variant="subtitle1" gutterBottom>
               Período de Execução
             </Typography>
             <Typography variant="body1" paragraph>
-              {application.formData.executionPeriod} meses
+              {String(application.formData.executionPeriod || '')} meses
             </Typography>
             
             <Typography variant="subtitle1" gutterBottom>
               Resultados Esperados
             </Typography>
             <Typography variant="body1" paragraph>
-              {application.formData.expectedResult}
+              {String(application.formData.expectedResult || '')}
             </Typography>
           </Paper>
         </Grid>
