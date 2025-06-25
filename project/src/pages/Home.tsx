@@ -100,7 +100,7 @@ const Home: React.FC = () => {
                     width: '100%'
                   }}
                 >
-                 Facilitando o acesso e gestão de editais culturais para agentes culturais e entes federativos.
+                 A integração das políticas culturais.
                 </Typography>
                 <Typography 
                 >
