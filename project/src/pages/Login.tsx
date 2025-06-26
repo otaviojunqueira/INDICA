@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
@@ -74,10 +74,11 @@ const Login: React.FC = () => {
       >
         <Card className="p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <LogIn className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900">Entrar no INDICA</h2>
+            <img 
+              src="/indica-logo-cut.png" 
+              alt="INDICA" 
+              className="h-24 mx-auto mb-4" 
+            />
             <p className="text-gray-600 mt-2">Acesse sua conta para continuar</p>
           </div>
 

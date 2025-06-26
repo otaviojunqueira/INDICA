@@ -74,10 +74,10 @@ const Home: React.FC = () => {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section id="home" className="relative overflow-hidden bg-gradient-to-r from-green-900 via-indigo-800 to-yellow-800 text-white py-16 md:py-24">
+      <section id="home" className="relative overflow-hidden bg-gradient-to-r from-purple-900 via-purple-800 to-violet-800 text-white py-16 md:py-24">
         <div className="absolute inset-0 bg-[url('/indica-logo-cut.png')] opacity-5 bg-center bg-no-repeat bg-contain"></div>
-        <div className="absolute top-0 left-0 w-96 h-96 bg-yellow-500 rounded-full opacity-20 blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-        <div className="absolute top-1/2 right-1/4 w-64 h-64 -translate-y-1/2 bg-indigo-500 rounded-full opacity-10 blur-2xl animate-pulse" style={{animationDelay: '2s', animationDuration: '8s'}}></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-fuchsia-500 rounded-full opacity-20 blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-1/2 right-1/4 w-64 h-64 -translate-y-1/2 bg-violet-500 rounded-full opacity-10 blur-2xl animate-pulse" style={{animationDelay: '2s', animationDuration: '8s'}}></div>
         
         <Container maxWidth="xl" className="relative z-10 px-4 sm:px-6">
           <Grid container spacing={4} alignItems="center">
@@ -86,78 +86,90 @@ const Home: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7 }}
+                className="pl-2 md:pl-0.5"
               >
                 <Typography 
-                  variant="h2" 
+                  variant="h1" 
                   component="h1" 
-                  className="mb-6 font-bold leading-tight w-full"
+                  className="mb-2 font-black leading-tight w-full"
                   sx={{ 
-                    fontSize: { xs: '2.2rem', md: '3.5rem' },
-                    background: 'linear-gradient(to right, #ffffff, #bae6fd, #a5f3fc)',
+                    fontSize: { xs: '2.5rem', md: '4.5rem' },
+                    background: 'linear-gradient(to right, #ffffff, #e9d5ff, #f5d0fe)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     letterSpacing: '-0.025em',
-                    width: '100%'
+                    width: '100%',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 600
                   }}
                 >
-                 A integração das políticas culturais.
+                 A INTEGRAÇÃO DAS
                 </Typography>
                 <Typography 
+                  variant="h1" 
+                  component="h1" 
+                  className="mb-6 font-black leading-tight w-full"
+                  sx={{ 
+                    fontSize: { xs: '2.5rem', md: '4.5rem' },
+                    background: 'linear-gradient(to right, #ffffff, #e9d5ff, #f5d0fe)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    letterSpacing: '-0.025em',
+                    width: '100%',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 900
+                  }}
                 >
-                ㅤ
+                 POLÍTICAS CULTURAIS.
                 </Typography>
-                <div className="flex flex-wrap gap-4">
-                  {isAuthenticated ? (
-                    <Button
-                      onClick={() => navigate('/dashboard')}
-                      variant="primary"
-                      color="secondary"
-                      className="px-8 py-3 text-lg font-medium shadow-lg hover:shadow-xl transition-all"
-                    >
-                      Ir para Dashboard
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        onClick={() => navigate('/login')}
-                        variant="primary"
-                        color="secondary"
-                        className="px-8 py-3 text-lg font-medium shadow-lg hover:shadow-xl transition-all"
-                      >
-                        Entrar
-                      </Button>
-                      <Button
-                        onClick={() => navigate('/register')}
-                        variant="outline"
-                        className="px-8 py-3 text-lg font-medium bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-700 transition-all"
-                      >
-                        Cadastrar
-                      </Button>
-                    </>
-                  )}
-                </div>
               </motion.div>
             </Grid>
-            <Grid item xs={12} lg={6}>
+            <Grid item xs={12} lg={6} className="flex flex-col items-center">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.7, delay: 0.3 }}
                 className="flex justify-center px-4 md:px-0"
               >
-                <div className="relative group p-4">
-                  <div className="absolute inset-4 bg-gradient-to-tr from-gray-500 to-blue-700 rounded-xl opacity-30 blur-md transform rotate-3 group-hover:rotate-6 transition-transform duration-700"></div>
-                  <div className="absolute inset-4 bg-gradient-to-bl from-gray-600 to-indigo-700 rounded-xl opacity-20 blur-md transform -rotate-2 group-hover:-rotate-4 transition-transform duration-700"></div>
-                  <img
-                    src="/indica-logo-cut.png"
-                    alt="INDICA - Sistema de Gestão Cultural"
-                    className="relative z-10 w-full max-w-md mx-auto h-auto rounded-xl shadow-2xl transform group-hover:scale-105 transition-all duration-700"
-                  />
-                  <div className="absolute inset-4 bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-700 z-0"></div>
-                </div>
+                <img
+                  src="/indica-logo-cut.png"
+                  alt="INDICA - Sistema de Gestão Cultural"
+                  className="relative z-10 w-full max-w-md mx-auto h-auto transform transition-all duration-700 filter brightness-0 invert"
+                />
               </motion.div>
             </Grid>
           </Grid>
+          
+          <div className="flex flex-wrap gap-8 justify-center mt-8">
+            {isAuthenticated ? (
+              <Button
+                onClick={() => navigate('/dashboard')}
+                variant="primary"
+                color="secondary"
+                className="px-8 py-3 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
+              >
+                Ir para Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={() => navigate('/login')}
+                  variant="primary"
+                  color="secondary"
+                  className="px-8 py-3 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
+                >
+                  Entrar
+                </Button>
+                <Button
+                  onClick={() => navigate('/register')}
+                  variant="outline"
+                  className="px-8 py-3 text-lg font-bold bg-transparent border-2 border-white text-white hover:bg-white hover:text-purple-700 transition-all"
+                >
+                  Cadastrar
+                </Button>
+              </>
+            )}
+          </div>
         </Container>
       </section>
 
