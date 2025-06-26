@@ -9,6 +9,7 @@ export interface IUser extends Document {
   phone: string;
   role: 'admin' | 'agent' | 'evaluator';
   entityId?: mongoose.Types.ObjectId;
+  cityId?: mongoose.Types.ObjectId;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +56,10 @@ const UserSchema = new Schema<IUser>(
     entityId: {
       type: Schema.Types.ObjectId,
       ref: 'Entity'
+    },
+    cityId: {
+      type: Schema.Types.ObjectId,
+      ref: 'City'
     },
     isActive: {
       type: Boolean,

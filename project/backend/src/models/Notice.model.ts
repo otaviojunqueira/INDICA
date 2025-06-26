@@ -4,6 +4,7 @@ export interface INotice extends Document {
   title: string;
   description: string;
   entityId: mongoose.Types.ObjectId;
+  cityId: mongoose.Types.ObjectId;
   startDate: Date;
   endDate: Date;
   totalAmount: number;
@@ -36,6 +37,11 @@ const NoticeSchema = new Schema<INotice>(
     entityId: {
       type: Schema.Types.ObjectId,
       ref: 'Entity',
+      required: true
+    },
+    cityId: {
+      type: Schema.Types.ObjectId,
+      ref: 'City',
       required: true
     },
     startDate: {

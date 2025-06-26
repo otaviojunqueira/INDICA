@@ -1,276 +1,252 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { Notice, Entity } from '../models';
+import { Notice, Entity, User } from '../models';
 import { handleAsync } from '../utils/errorHandler';
+import mongoose from 'mongoose';
 
 // Controller para editais
 export const noticeController = {
-  // Criar um novo edital
-  create: async (req: Request, res: Response) => {
-    try {
-      // Validar os dados da requisição
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      // Verificar se o usuário tem permissão (admin)
-      const userRole = req.user.role;
-      if (userRole !== 'admin') {
-        return res.status(403).json({ message: 'Acesso negado' });
-      }
-
-      const {
-        title,
-        description,
-        entityId,
-        startDate,
-        endDate,
-        totalAmount,
-        maxApplicationValue,
-        minApplicationValue,
-        categories,
-        requirements,
-        documents,
-        evaluationCriteria
-      } = req.body;
-
-      // Criar o novo edital
-      const notice = new Notice({
-        title,
-        description,
-        entityId,
-        startDate,
-        endDate,
-        totalAmount,
-        maxApplicationValue,
-        minApplicationValue,
-        categories: categories || [],
-        requirements: requirements || [],
-        documents: documents || [],
-        evaluationCriteria: evaluationCriteria || []
-      });
-
-      await notice.save();
-
-      res.status(201).json({
-        message: 'Edital criado com sucesso',
-        notice
-      });
-    } catch (error) {
-      console.error('Erro ao criar edital:', error);
-      res.status(500).json({ message: 'Erro no servidor' });
-    }
-  },
-
-  // Listar editais com filtros e ordenação
+  // Listar editais com priorização por cidade do usuário
   listNotices: handleAsync(async (req: Request, res: Response) => {
-    const {
-      page = 1,
-      limit = 10,
-      search = '',
-      status = 'published',
-      category,
+    const { 
+      status, 
+      category, 
+      entity, 
       city,
-      state,
-      sortByLocation = false,
-      minValue,
-      maxValue
+      startDate, 
+      endDate, 
+      query,
+      page = 1, 
+      limit = 10 
     } = req.query;
-
-    // Construir query base
-    const baseQuery: any = {
-      status
-    };
-
-    // Adicionar filtro de busca
-    if (search) {
-      baseQuery.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+    
+    // Construir filtro de busca
+    const filter: any = {};
+    
+    if (status) {
+      filter.status = status;
+    } else {
+      // Por padrão, mostrar apenas editais publicados
+      filter.status = 'published';
+    }
+    
+    if (category) {
+      filter.categories = { $in: [category.toString()] };
+    }
+    
+    if (entity) {
+      filter.entityId = new mongoose.Types.ObjectId(entity.toString());
+    }
+    
+    if (city) {
+      filter.cityId = new mongoose.Types.ObjectId(city.toString());
+    }
+    
+    if (startDate) {
+      filter.startDate = { $gte: new Date(startDate.toString()) };
+    }
+    
+    if (endDate) {
+      filter.endDate = { $lte: new Date(endDate.toString()) };
+    }
+    
+    if (query) {
+      filter.$or = [
+        { title: { $regex: query.toString(), $options: 'i' } },
+        { description: { $regex: query.toString(), $options: 'i' } }
       ];
     }
-
-    // Adicionar filtro de categoria
-    if (category) {
-      baseQuery.categories = category;
+    
+    // Calcular paginação
+    const skip = (Number(page) - 1) * Number(limit);
+    
+    // Obter a cidade do usuário autenticado, se houver
+    let userCityId = null;
+    if (req.user && req.user.id) {
+      const user = await User.findById(req.user.id).select('cityId');
+      if (user && user.cityId) {
+        userCityId = user.cityId;
+      }
     }
-
-    // Adicionar filtros de localização
-    if (city || state) {
-      const entityQuery: any = {};
-      if (city) entityQuery.city = city;
-      if (state) entityQuery.state = state;
-
-      const entities = await Entity.find(entityQuery).select('_id');
-      baseQuery.entityId = { $in: entities.map(e => e._id) };
-    }
-
-    // Adicionar filtros de valor
-    if (minValue) baseQuery.minApplicationValue = { $gte: Number(minValue) };
-    if (maxValue) baseQuery.maxApplicationValue = { $lte: Number(maxValue) };
-
-    // Executar query principal
-    let noticesQuery = Notice.find(baseQuery)
-      .populate('entityId', 'name city state')
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
-
-    // Ordenar por relevância geográfica se solicitado
-    if (sortByLocation && city) {
-      noticesQuery = noticesQuery.sort({
-        'entityId.city': city ? 'asc' : 'desc',
-        startDate: 'asc'
-      });
+    
+    // Buscar editais
+    let notices;
+    
+    // Se o usuário tem uma cidade definida, priorizar editais dessa cidade
+    if (userCityId && !city) {
+      // Primeiro, buscar editais da cidade do usuário
+      const cityNotices = await Notice.find({ ...filter, cityId: userCityId })
+        .sort({ startDate: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .populate('entityId', 'name')
+        .populate('cityId', 'name state stateCode');
+      
+      // Depois, buscar outros editais (excluindo os da cidade do usuário)
+      const otherNotices = await Notice.find({ ...filter, cityId: { $ne: userCityId } })
+        .sort({ startDate: -1 })
+        .skip(Math.max(0, skip - cityNotices.length))
+        .limit(Math.max(0, Number(limit) - cityNotices.length))
+        .populate('entityId', 'name')
+        .populate('cityId', 'name state stateCode');
+      
+      // Combinar os resultados
+      notices = [...cityNotices, ...otherNotices];
     } else {
-      noticesQuery = noticesQuery.sort({ startDate: 'asc' });
+      // Busca normal sem priorização
+      notices = await Notice.find(filter)
+        .sort({ startDate: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .populate('entityId', 'name')
+        .populate('cityId', 'name state stateCode');
     }
-
-    const [notices, total] = await Promise.all([
-      noticesQuery.exec(),
-      Notice.countDocuments(baseQuery)
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: notices,
+    
+    // Contar total de documentos para paginação
+    const total = await Notice.countDocuments(filter);
+    
+    res.json({
+      notices,
       pagination: {
         total,
         page: Number(page),
+        limit: Number(limit),
         pages: Math.ceil(total / Number(limit))
       }
     });
   }),
-
-  // Obter detalhes de um edital
-  getNotice: handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-
-    const notice = await Notice.findById(id)
-      .populate('entityId', 'name city state contactEmail contactPhone');
-
+  
+  // Obter edital por ID
+  getNoticeById: handleAsync(async (req: Request, res: Response) => {
+    const notice = await Notice.findById(req.params.id)
+      .populate('entityId', 'name cnpj contactEmail contactPhone')
+      .populate('cityId', 'name state stateCode');
+    
     if (!notice) {
-      return res.status(404).json({
-        success: false,
-        error: 'Edital não encontrado'
-      });
+      return res.status(404).json({ message: 'Edital não encontrado' });
     }
-
-    res.status(200).json({
-      success: true,
-      data: notice
-    });
+    
+    res.json(notice);
   }),
-
-  // Criar novo edital (apenas para entidades)
-  createNotice: handleAsync(async (req: Request, res: Response) => {
-    const entityId = req.user.entityId;
-
-    if (!entityId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Apenas entidades podem criar editais'
-      });
+  
+  // Criar um novo edital (apenas admin)
+  create: handleAsync(async (req: Request, res: Response) => {
+    // Validar os dados da requisição
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-
-    const notice = await Notice.create({
-      ...req.body,
+    
+    // Verificar se o usuário tem permissão (admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Acesso negado' });
+    }
+    
+    const {
+      title,
+      description,
       entityId,
-      status: 'draft'
-    });
-
-    res.status(201).json({
-      success: true,
-      data: notice
-    });
-  }),
-
-  // Atualizar edital (apenas para entidades proprietárias)
-  updateNotice: handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const entityId = req.user.entityId;
-
-    const notice = await Notice.findOne({ _id: id, entityId });
-
-    if (!notice) {
-      return res.status(404).json({
-        success: false,
-        error: 'Edital não encontrado ou você não tem permissão para editá-lo'
-      });
+      cityId,
+      startDate,
+      endDate,
+      totalAmount,
+      maxApplicationValue,
+      minApplicationValue,
+      categories,
+      requirements,
+      documents,
+      evaluationCriteria
+    } = req.body;
+    
+    // Verificar se a entidade existe
+    const entity = await Entity.findById(entityId);
+    if (!entity) {
+      return res.status(400).json({ message: 'Entidade não encontrada' });
     }
-
-    // Não permitir alteração de status por esta rota
-    delete req.body.status;
-
-    const updatedNotice = await Notice.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    res.status(200).json({
-      success: true,
-      data: updatedNotice
+    
+    // Criar o novo edital
+    const notice = new Notice({
+      title,
+      description,
+      entityId,
+      cityId,
+      startDate,
+      endDate,
+      totalAmount,
+      maxApplicationValue,
+      minApplicationValue,
+      categories: categories || [],
+      requirements: requirements || [],
+      documents: documents || [],
+      evaluationCriteria: evaluationCriteria || []
     });
-  }),
-
-  // Publicar edital
-  publishNotice: handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const entityId = req.user.entityId;
-
-    const notice = await Notice.findOne({ _id: id, entityId });
-
-    if (!notice) {
-      return res.status(404).json({
-        success: false,
-        error: 'Edital não encontrado ou você não tem permissão para publicá-lo'
-      });
-    }
-
-    if (notice.status !== 'draft') {
-      return res.status(400).json({
-        success: false,
-        error: 'Apenas editais em rascunho podem ser publicados'
-      });
-    }
-
-    notice.status = 'published';
+    
     await notice.save();
-
-    res.status(200).json({
-      success: true,
-      data: notice
+    
+    res.status(201).json({
+      message: 'Edital criado com sucesso',
+      notice
     });
   }),
-
-  // Cancelar edital
-  cancelNotice: handleAsync(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const entityId = req.user.entityId;
-
-    const notice = await Notice.findOne({ _id: id, entityId });
-
+  
+  // Atualizar edital (apenas admin)
+  update: handleAsync(async (req: Request, res: Response) => {
+    // Validar os dados da requisição
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    
+    // Verificar se o usuário tem permissão (admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Acesso negado' });
+    }
+    
+    const noticeId = req.params.id;
+    
+    // Verificar se o edital existe
+    const notice = await Notice.findById(noticeId);
     if (!notice) {
-      return res.status(404).json({
-        success: false,
-        error: 'Edital não encontrado ou você não tem permissão para cancelá-lo'
-      });
+      return res.status(404).json({ message: 'Edital não encontrado' });
     }
-
-    if (notice.status === 'canceled') {
-      return res.status(400).json({
-        success: false,
-        error: 'Este edital já está cancelado'
-      });
+    
+    // Atualizar os campos
+    const updateData = req.body;
+    Object.keys(updateData).forEach(key => {
+      if (key !== '_id' && key !== 'createdAt' && key !== 'updatedAt') {
+        (notice as any)[key] = updateData[key];
+      }
+    });
+    
+    await notice.save();
+    
+    res.json({
+      message: 'Edital atualizado com sucesso',
+      notice
+    });
+  }),
+  
+  // Excluir edital (apenas admin)
+  delete: handleAsync(async (req: Request, res: Response) => {
+    // Verificar se o usuário tem permissão (admin)
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Acesso negado' });
     }
-
+    
+    const noticeId = req.params.id;
+    
+    // Verificar se o edital existe
+    const notice = await Notice.findById(noticeId);
+    if (!notice) {
+      return res.status(404).json({ message: 'Edital não encontrado' });
+    }
+    
+    // Em vez de excluir, apenas cancelar
     notice.status = 'canceled';
     await notice.save();
-
-    res.status(200).json({
-      success: true,
-      data: notice
+    
+    res.json({
+      message: 'Edital cancelado com sucesso'
     });
   })
 };

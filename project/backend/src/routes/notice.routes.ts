@@ -11,6 +11,7 @@ const validateNotice = [
   body('title').notEmpty().withMessage('O título é obrigatório'),
   body('description').notEmpty().withMessage('A descrição é obrigatória'),
   body('entityId').notEmpty().withMessage('Entidade é obrigatória'),
+  body('cityId').notEmpty().withMessage('Cidade é obrigatória'),
   body('startDate').isISO8601().withMessage('A data de início deve ser uma data válida'),
   body('endDate').isISO8601().withMessage('A data de término deve ser uma data válida'),
   body('totalAmount').isNumeric().withMessage('O valor total deve ser um número'),
@@ -20,18 +21,11 @@ const validateNotice = [
 
 // Rotas públicas
 router.get('/', noticePreferenceMiddleware, noticeController.listNotices);
-router.get('/:id', noticeController.getNotice);
+router.get('/:id', noticeController.getNoticeById);
 
 // Rotas protegidas
-router.use(authMiddleware);
-
-router.route('/')
-  .post(validateNotice, noticeController.createNotice);
-
-router.route('/:id')
-  .put(validateNotice, noticeController.updateNotice);
-
-router.post('/:id/publish', noticeController.publishNotice);
-router.post('/:id/cancel', noticeController.cancelNotice);
+router.post('/', authMiddleware, validateNotice, noticeController.create);
+router.put('/:id', authMiddleware, validateNotice, noticeController.update);
+router.delete('/:id', authMiddleware, noticeController.delete);
 
 export default router; 

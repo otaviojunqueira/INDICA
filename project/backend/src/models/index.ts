@@ -4,6 +4,9 @@ import Notice from './Notice.model';
 import Application from './Application.model';
 import AgentProfile from './AgentProfile.model';
 import CulturalGroup from './CulturalGroup.model';
+import City from './City.model';
+import Evaluator from './Evaluator.model';
+import EntityPortal from './EntityPortal.model';
 
 // Exportar os modelos
 export {
@@ -12,5 +15,8 @@ export {
   Notice,
   Application,
   AgentProfile,
-  CulturalGroup
+  CulturalGroup,
+  City,
+  Evaluator,
+  EntityPortal
 }; 
