@@ -35,12 +35,16 @@ import DocumentsPage from '../pages/admin/DocumentsPage';
 // Rotas de Parecerista
 import EvaluationPage from '../pages/evaluator/EvaluationPage';
 import EvaluationListPage from '../pages/evaluator/EvaluationListPage';
+import ProjectsToEvaluatePage from '../pages/evaluator/ProjectsToEvaluatePage';
+import HistoryPage from '../pages/evaluator/HistoryPage';
+import ResourcesPage from '../pages/evaluator/ResourcesPage';
 
 // Páginas de calendário cultural
 import CalendarPage from '../pages/Calendar';
 
 // Componentes de rota
 import CulturalGroupRoute from '../components/CulturalGroupRoute';
+import EvaluatorRoute from '../components/EvaluatorRoute';
 
 // Componente de rota protegida
 const PrivateRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -106,10 +110,41 @@ export const AppRoutes: React.FC = () => {
       <Route path="/admin/reports/:type" element={<PrivateRouteWrapper><ReportsPage /></PrivateRouteWrapper>} />
       
       {/* Rotas de Avaliador */}
-      <Route path="/evaluator/projects" element={<PrivateRouteWrapper><Dashboard /></PrivateRouteWrapper>} />
-      <Route path="/evaluator/projects/:id" element={<PrivateRouteWrapper><Dashboard /></PrivateRouteWrapper>} />
-      <Route path="/evaluator/history" element={<PrivateRouteWrapper><Dashboard /></PrivateRouteWrapper>} />
-      <Route path="/evaluator/appeals" element={<PrivateRouteWrapper><Dashboard /></PrivateRouteWrapper>} />
+      <Route path="/evaluator/projects" element={
+        <PrivateRouteWrapper>
+          <EvaluatorRoute>
+            <ProjectsToEvaluatePage />
+          </EvaluatorRoute>
+        </PrivateRouteWrapper>
+      } />
+      <Route path="/evaluator/history" element={
+        <PrivateRouteWrapper>
+          <EvaluatorRoute>
+            <HistoryPage />
+          </EvaluatorRoute>
+        </PrivateRouteWrapper>
+      } />
+      <Route path="/evaluator/resources" element={
+        <PrivateRouteWrapper>
+          <EvaluatorRoute>
+            <ResourcesPage />
+          </EvaluatorRoute>
+        </PrivateRouteWrapper>
+      } />
+      <Route path="/evaluator/evaluations" element={
+        <PrivateRouteWrapper>
+          <EvaluatorRoute>
+            <EvaluationListPage />
+          </EvaluatorRoute>
+        </PrivateRouteWrapper>
+      } />
+      <Route path="/evaluator/evaluation/:id" element={
+        <PrivateRouteWrapper>
+          <EvaluatorRoute>
+            <EvaluationPage />
+          </EvaluatorRoute>
+        </PrivateRouteWrapper>
+      } />
       
       {/* Documentação e Ajuda */}
       <Route path="/documentation" element={<PrivateRouteWrapper><About /></PrivateRouteWrapper>} />
@@ -121,10 +156,6 @@ export const AppRoutes: React.FC = () => {
       {/* Rotas de Admin */}
       <Route path="/admin/create-notice" element={<PrivateRouteWrapper><CreateNoticePage /></PrivateRouteWrapper>} />
       <Route path="/admin/documents" element={<PrivateRouteWrapper><DocumentsPage /></PrivateRouteWrapper>} />
-
-      {/* Rotas de Parecerista */}
-      <Route path="/evaluator/evaluations" element={<PrivateRouteWrapper><EvaluationListPage /></PrivateRouteWrapper>} />
-      <Route path="/evaluator/evaluation/:id" element={<PrivateRouteWrapper><EvaluationPage /></PrivateRouteWrapper>} />
 
       {/* Páginas de calendário cultural */}
       <Route path="/calendario" element={<CalendarPage />} />

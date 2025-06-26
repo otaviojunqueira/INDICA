@@ -1,33 +1,35 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 /**
- * Componente para proteger rotas que requerem acesso de parecerista (avaliador)
+ * Componente que protege rotas específicas para pareceristas (avaliadores)
+ * Verifica se o usuário está autenticado e se possui a role "evaluator"
  */
 interface EvaluatorRouteProps {
-  children?: React.ReactNode;
-  redirectTo?: string;
+  children: React.ReactNode;
 }
 
-export const EvaluatorRoute: React.FC<EvaluatorRouteProps> = ({ 
-  children, 
-  redirectTo = '/dashboard' 
-}) => {
+const EvaluatorRoute: React.FC<EvaluatorRouteProps> = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuthStore();
-  const isEvaluator = user?.role === 'evaluator';
-  const isAdmin = user?.role === 'admin';
-  const hasAccess = isEvaluator || isAdmin; // Admins também podem acessar rotas de avaliador
 
   if (isLoading) {
     return <div>Carregando...</div>;
   }
 
-  if (!isAuthenticated || !hasAccess) {
-    return <Navigate to={redirectTo} />;
+  // Redirecionar para login se não estiver autenticado
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
   }
 
-  return <>{children || <Outlet />}</>;
+  // Verificar se o usuário tem a role de avaliador
+  if (user?.role !== 'evaluator') {
+    // Redirecionar para o dashboard se não for um avaliador
+    return <Navigate to="/dashboard" />;
+  }
+
+  // Se o usuário é um avaliador, renderizar o conteúdo da rota
+  return <>{children}</>;
 };
 
 export default EvaluatorRoute; 

@@ -208,7 +208,7 @@ const CulturalCalendar: React.FC = () => {
         
         <Grid item xs={12} sm={4}>
           <FormControl fullWidth>
-            <InputLabel>Categoria</InputLabel>
+            <InputLabel>Setor Cultural</InputLabel>
             <Select
               value={filters.category}
               onChange={handleFilterChange('category')}

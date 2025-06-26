@@ -231,7 +231,7 @@ const Notices: React.FC = () => {
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
-              <option value="all">Todas as categorias</option>
+              <option value="all">Todas os setores culturais</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
