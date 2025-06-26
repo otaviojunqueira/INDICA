@@ -64,7 +64,8 @@ const validationSchema = Yup.object().shape({
     .required('Anos de experiência é obrigatório'),
   biography: Yup.string()
     .max(2000, 'Biografia deve ter no máximo 2000 caracteres')
-    .required('Biografia é obrigatória')
+    .required('Biografia é obrigatória'),
+  hasCulturalGroup: Yup.boolean()
 });
 
 interface ProfileFormProps {
@@ -389,13 +390,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               <Divider sx={{ my: 3 }} />
 
               {/* Dados Culturais */}
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
                 Dados Culturais
               </Typography>
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12}>
                   <FormControl fullWidth>
-                    <FormLabel component="legend">Áreas Culturais</FormLabel>
+                    <FormLabel>Áreas Culturais</FormLabel>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
                       {culturalAreas.map((area) => (
                         <Chip
@@ -403,12 +404,17 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                           label={area}
                           onClick={() => {
                             const currentAreas = values.culturalArea || [];
-                            const newAreas = currentAreas.includes(area)
-                              ? currentAreas.filter((a: string) => a !== area)
-                              : [...currentAreas, area];
-                            setFieldValue('culturalArea', newAreas);
+                            if (currentAreas.includes(area)) {
+                              setFieldValue(
+                                'culturalArea',
+                                currentAreas.filter((a) => a !== area)
+                              );
+                            } else {
+                              setFieldValue('culturalArea', [...currentAreas, area]);
+                            }
                           }}
                           color={values.culturalArea?.includes(area) ? 'primary' : 'default'}
+                          sx={{ m: 0.5 }}
                         />
                       ))}
                     </Box>
@@ -419,32 +425,49 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                     )}
                   </FormControl>
                 </Grid>
+
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
+                    type="number"
                     name="yearsOfExperience"
                     label="Anos de Experiência"
-                    type="number"
                     value={values.yearsOfExperience || ''}
                     onChange={handleChange}
                     error={formTouched.yearsOfExperience && !!formErrors.yearsOfExperience}
-                    helperText={formTouched.yearsOfExperience && (formErrors.yearsOfExperience as string)}
+                    helperText={
+                      formTouched.yearsOfExperience && (formErrors.yearsOfExperience as string)
+                    }
                   />
                 </Grid>
+
+                <Grid item xs={12}>
+                  <FormControl component="fieldset" sx={{ width: '100%' }}>
+                    <FormLabel component="legend">Você faz parte de algum coletivo cultural?</FormLabel>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={values.hasCulturalGroup || false}
+                          onChange={(e) => setFieldValue('hasCulturalGroup', e.target.checked)}
+                          name="hasCulturalGroup"
+                        />
+                      }
+                      label={values.hasCulturalGroup ? 'Sim' : 'Não'}
+                    />
+                  </FormControl>
+                </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    name="biography"
-                    label="Biografia"
                     multiline
                     rows={4}
+                    name="biography"
+                    label="Biografia"
                     value={values.biography || ''}
                     onChange={handleChange}
                     error={formTouched.biography && !!formErrors.biography}
-                    helperText={
-                      (formTouched.biography && (formErrors.biography as string)) ||
-                      `${values.biography?.length || 0}/2000 caracteres`
-                    }
+                    helperText={formTouched.biography && (formErrors.biography as string)}
                   />
                 </Grid>
               </Grid>

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Bell, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { agentProfileService } from '../../services/agentProfile.service';
 
 interface HeaderProps {
   isMenuOpen: boolean;
@@ -15,6 +16,23 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
   const isPublicPage = location.pathname === '/';
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [hasCulturalGroup, setHasCulturalGroup] = useState(false);
+
+  useEffect(() => {
+    const checkCulturalGroupAccess = async () => {
+      try {
+        if (isAuthenticated && user) {
+          const profile = await agentProfileService.getProfile();
+          setHasCulturalGroup(profile?.hasCulturalGroup || false);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar acesso ao coletivo cultural:', error);
+        setHasCulturalGroup(false);
+      }
+    };
+
+    checkCulturalGroupAccess();
+  }, [isAuthenticated, user, setHasCulturalGroup]);
 
   const handleLogout = () => {
     logout();
@@ -26,21 +44,30 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
     { name: 'Benefícios', href: '#benefits' },
     { name: 'Sobre', href: '#about' },
     { name: 'Como Funciona', href: '#how-it-works' },
+    { name: 'Calendário Cultural', href: '/calendario' },
     { name: 'Contato', href: '#contact' },
   ];
   
-  const agentNavigation = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Editais', href: '/notices' },
-    { name: 'Inscrições', href: '/applications' },
-    { name: 'Meu Perfil', href: '/agent-profile' },
-    { name: 'Coletivos Culturais', href: '/cultural-group' },
-  ];
+  const getAgentNavigation = () => {
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard' },
+      { name: 'Editais', href: '/notices' },
+      { name: 'Inscrições', href: '/applications' },
+      { name: 'Calendário Cultural', href: '/calendario' },
+      { name: 'Meu Perfil', href: '/agent-profile' },
+    ];
+
+    if (hasCulturalGroup) {
+      baseNavigation.push({ name: 'Coletivos Culturais', href: '/cultural-group' });
+    }
+
+    return baseNavigation;
+  };
   
   const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Gestão de Editais', href: '/admin/notices' },
-    { name: 'Inscrições', href: '/admin/applications' },
+    { name: 'Calendário Cultural', href: '/calendario' },
     { name: 'Avaliadores', href: '/admin/evaluators' },
     { name: 'Relatórios', href: '/admin/reports' },
   ];
@@ -61,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
     } else if (user?.role === 'evaluator') {
       navigation = evaluatorNavigation;
     } else {
-      navigation = agentNavigation;
+      navigation = getAgentNavigation();
     }
   }
 
@@ -199,42 +226,20 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
                   
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-10">
-                      <div className="px-4 py-2 border-b border-gray-200">
-                        <p className="text-xs text-gray-500">Conectado como</p>
-                        <p className="text-sm font-semibold text-gray-700">{user?.name}</p>
-                        <p className="text-xs text-gray-500 capitalize">
-                          {user?.role === 'admin' ? 'Administrador' : 
-                           user?.role === 'evaluator' ? 'Avaliador' : 
-                           'Agente Cultural'}
-                        </p>
-                      </div>
-                      
-                      <Link 
-                        to="/agent-profile" 
+                      <Link
+                        to="/agent-profile"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         Meu Perfil
                       </Link>
-                      
-                      <Link 
-                        to="/settings" 
+                      <Link
+                        to="/notifications"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        Configurações
+                        Notificações
                       </Link>
-                      
-                      <Link 
-                        to="/help" 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        Ajuda
-                      </Link>
-                      
-                      <div className="border-t border-gray-200 my-1"></div>
-                      
                       <button
                         onClick={() => {
                           setUserMenuOpen(false);
@@ -270,119 +275,37 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-700 hover:text-purple-600 p-2"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-purple-500"
             >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <span className="sr-only">Abrir menu principal</span>
+              {isMenuOpen ? (
+                <X className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Menu className="block h-6 w-6" aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
+        <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            {navigation.map((item) => {
-              // Se for uma rota com âncora, usa como href, senão usa Link do React Router
-              if (item.href.startsWith('#')) {
-                return (
-              <a
+            {navigation.map((item) => (
+              <Link
                 key={item.name}
-                href={item.href}
-                className="text-gray-700 hover:text-purple-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                to={item.href}
+                className={`${
+                  location.pathname === item.href
+                    ? 'bg-purple-50 text-purple-600'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                } block px-3 py-2 rounded-md text-base font-medium`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.name}
-              </a>
-                );
-              } else {
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`${
-                      location.pathname === item.href 
-                        ? 'text-purple-600 font-semibold' 
-                        : 'text-gray-700 hover:text-purple-600'
-                    } block px-3 py-2 rounded-md text-base font-medium transition-colors`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              }
-            })}
-            
-            {isAuthenticated ? (
-              <>
-                {/* Seções adicionais no menu mobile para usuário autenticado */}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="px-3 py-2">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-700">{user?.name}</p>
-                        <p className="text-xs text-gray-500 capitalize">
-                          {user?.role === 'admin' ? 'Administrador' : 
-                           user?.role === 'evaluator' ? 'Avaliador' : 
-                           'Agente Cultural'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Link
-                    to="/agent-profile"
-                    className="block px-3 py-2 text-gray-700 hover:text-purple-600 text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Meu Perfil
-                  </Link>
-                  
-                  <Link
-                    to="/notifications"
-                    className="block px-3 py-2 text-gray-700 hover:text-purple-600 text-base font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Notificações
-                    {unreadCount > 0 && (
-                      <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </Link>
-                  
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      handleLogout();
-                    }}
-                    className="block w-full text-left px-3 py-2 text-red-600 hover:text-red-800 text-base font-medium"
-                  >
-                    Sair
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="pt-4 border-t border-gray-200 space-y-2">
-                <Link
-                  to="/login"
-                  className="text-gray-700 hover:text-purple-600 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Entrar
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-purple-600 text-white block px-3 py-2 rounded-md text-base font-medium hover:bg-purple-700 transition-colors mx-3"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Cadastrar
-                </Link>
-              </div>
-            )}
+              </Link>
+            ))}
           </div>
         </div>
       )}

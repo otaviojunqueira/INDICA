@@ -36,6 +36,12 @@ import DocumentsPage from '../pages/admin/DocumentsPage';
 import EvaluationPage from '../pages/evaluator/EvaluationPage';
 import EvaluationListPage from '../pages/evaluator/EvaluationListPage';
 
+// Páginas de calendário cultural
+import CalendarPage from '../pages/Calendar';
+
+// Componentes de rota
+import CulturalGroupRoute from '../components/CulturalGroupRoute';
+
 // Componente de rota protegida
 const PrivateRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -66,8 +72,20 @@ export const AppRoutes: React.FC = () => {
       {/* Rotas do Agente Cultural */}
       <Route path="/profile" element={<PrivateRouteWrapper><AgentProfilePage /></PrivateRouteWrapper>} />
       <Route path="/agent-profile" element={<PrivateRouteWrapper><AgentProfilePage /></PrivateRouteWrapper>} />
-      <Route path="/cultural-group" element={<PrivateRouteWrapper><CulturalGroupPage /></PrivateRouteWrapper>} />
-      <Route path="/cultural-group/:id" element={<PrivateRouteWrapper><CulturalGroupPage /></PrivateRouteWrapper>} />
+      <Route path="/cultural-group" element={
+        <PrivateRouteWrapper>
+          <CulturalGroupRoute>
+            <CulturalGroupPage />
+          </CulturalGroupRoute>
+        </PrivateRouteWrapper>
+      } />
+      <Route path="/cultural-group/:id" element={
+        <PrivateRouteWrapper>
+          <CulturalGroupRoute>
+            <CulturalGroupPage />
+          </CulturalGroupRoute>
+        </PrivateRouteWrapper>
+      } />
       
       {/* Editais - Visualização para todos os usuários autenticados */}
       <Route path="/notices" element={<PrivateRouteWrapper><NoticeList /></PrivateRouteWrapper>} />
@@ -107,6 +125,9 @@ export const AppRoutes: React.FC = () => {
       {/* Rotas de Parecerista */}
       <Route path="/evaluator/evaluations" element={<PrivateRouteWrapper><EvaluationListPage /></PrivateRouteWrapper>} />
       <Route path="/evaluator/evaluation/:id" element={<PrivateRouteWrapper><EvaluationPage /></PrivateRouteWrapper>} />
+
+      {/* Páginas de calendário cultural */}
+      <Route path="/calendario" element={<CalendarPage />} />
 
       {/* Rota 404 */}
       <Route path="*" element={<NotFound />} />

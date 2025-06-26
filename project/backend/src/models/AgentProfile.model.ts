@@ -31,6 +31,7 @@ export interface IAgentProfile extends Document {
   yearsOfExperience: number;
   portfolioLinks?: string[];
   biography: string;
+  hasCulturalGroup: boolean;
   
   // Dados de Acessibilidade
   hasDisability: boolean;
@@ -157,6 +158,11 @@ const AgentProfileSchema = new Schema<IAgentProfile>(
       required: true,
       trim: true,
       maxlength: 2000
+    },
+    hasCulturalGroup: {
+      type: Boolean,
+      required: true,
+      default: false
     },
     
     // Dados de Acessibilidade

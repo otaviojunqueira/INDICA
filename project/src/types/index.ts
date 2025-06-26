@@ -41,6 +41,7 @@ export interface IAgentProfile {
   yearsOfExperience: number;
   biography: string;
   portfolio?: string[];
+  hasCulturalGroup: boolean;
 
   // Dados de Acessibilidade
   hasDisability: boolean;
