@@ -61,6 +61,11 @@ const PrivateRouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children
   return <>{children}</>;
 };
 
+import EvaluatorsManagementPage from '../pages/admin/EvaluatorsManagementPage';
+import NewEvaluatorPage from '../pages/admin/NewEvaluatorPage';
+import EditEvaluatorPage from '../pages/admin/EditEvaluatorPage';
+import EntityPortalPage from '../pages/admin/EntityPortalPage';
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
@@ -159,6 +164,19 @@ export const AppRoutes: React.FC = () => {
 
       {/* Páginas de calendário cultural */}
       <Route path="/calendario" element={<CalendarPage />} />
+
+      {/* Rotas de Admin */}
+      <Route path="/admin/reports" element={<PrivateRouteWrapper><ReportsPage /></PrivateRouteWrapper>} />
+      <Route path="/admin/documents" element={<PrivateRouteWrapper><DocumentsPage /></PrivateRouteWrapper>} />
+      <Route path="/admin/notices/create" element={<PrivateRouteWrapper><CreateNoticePage /></PrivateRouteWrapper>} />
+      
+      {/* Rotas de Pareceristas */}
+      <Route path="/admin/evaluators" element={<PrivateRouteWrapper><EvaluatorsManagementPage /></PrivateRouteWrapper>} />
+      <Route path="/admin/evaluators/new" element={<PrivateRouteWrapper><NewEvaluatorPage /></PrivateRouteWrapper>} />
+      <Route path="/admin/evaluators/edit/:id" element={<PrivateRouteWrapper><EditEvaluatorPage /></PrivateRouteWrapper>} />
+
+      {/* Rotas de Portais de Entidades */}
+      <Route path="/admin/entity-portals" element={<PrivateRouteWrapper><EntityPortalPage /></PrivateRouteWrapper>} />
 
       {/* Rota 404 */}
       <Route path="*" element={<NotFound />} />

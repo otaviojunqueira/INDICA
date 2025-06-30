@@ -1,31 +1,43 @@
 import { Router } from 'express';
 import { evaluatorController } from '../controllers/evaluator.controller';
-import authMiddleware from '../middleware/auth.middleware';
-import { body } from 'express-validator';
+import authMiddleware, { isAdmin } from '../middleware/auth.middleware';
+import { check } from 'express-validator';
 
 const router = Router();
 
-// Validação para criação/atualização de parecerista
-const validateEvaluator = [
-  body('userId').notEmpty().withMessage('Usuário é obrigatório'),
-  body('specialties').isArray({ min: 1 }).withMessage('Pelo menos uma especialidade é obrigatória'),
-  body('biography').notEmpty().withMessage('Biografia é obrigatória'),
-  body('education').notEmpty().withMessage('Formação é obrigatória'),
-  body('experience').notEmpty().withMessage('Experiência é obrigatória')
+// Validação para criação e atualização de pareceristas
+const evaluatorValidation = [
+  check('userId').optional().isUUID().withMessage('ID de usuário inválido'),
+  check('specialties')
+    .isArray({ min: 1 })
+    .withMessage('Pelo menos uma especialidade é obrigatória'),
+  check('biography')
+    .notEmpty()
+    .withMessage('Biografia é obrigatória'),
+  check('education')
+    .notEmpty()
+    .withMessage('Formação é obrigatória'),
+  check('experience')
+    .notEmpty()
+    .withMessage('Experiência é obrigatória')
 ];
 
-// Todas as rotas de pareceristas requerem autenticação
-router.use(authMiddleware);
+// Validação para atualização de status
+const statusValidation = [
+  check('isActive')
+    .isBoolean()
+    .withMessage('O campo isActive deve ser um booleano')
+];
 
-// Rotas para listar e obter
+// Rotas públicas
 router.get('/', evaluatorController.listEvaluators);
 router.get('/:id', evaluatorController.getEvaluatorById);
+router.get('/specialty/:specialty', evaluatorController.listEvaluatorsBySpecialty);
 
-// Rotas para criação e atualização (admin)
-router.post('/', validateEvaluator, evaluatorController.createEvaluator);
-router.put('/:id', validateEvaluator, evaluatorController.updateEvaluator);
-
-// Rota para ativar/desativar (admin)
-router.patch('/:id/status', evaluatorController.toggleEvaluatorStatus);
+// Rotas protegidas (apenas para administradores)
+router.post('/', authMiddleware, isAdmin, evaluatorValidation, evaluatorController.createEvaluator);
+router.put('/:id', authMiddleware, isAdmin, evaluatorValidation, evaluatorController.updateEvaluator);
+router.patch('/:id/status', authMiddleware, isAdmin, statusValidation, evaluatorController.updateEvaluatorStatus);
+router.delete('/:id', authMiddleware, isAdmin, evaluatorController.deleteEvaluator);
 
 export default router; 

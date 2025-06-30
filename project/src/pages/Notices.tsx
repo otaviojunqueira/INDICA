@@ -2,19 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Filter, Plus, Calendar, MapPin, DollarSign, Clock, Tag } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-
-// Tipos simulados (serão substituídos pelos reais da API)
-interface Notice {
-  id: string;
-  title: string;
-  description: string;
-  entityName: string;
-  category: string;
-  budget: number;
-  openingDate: Date;
-  closingDate: Date;
-  status: 'draft' | 'open' | 'evaluation' | 'result' | 'closed';
-}
+import noticeService, { Notice } from '../services/notice.service';
 
 const Notices: React.FC = () => {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -24,16 +12,18 @@ const Notices: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { user, isAuthenticated } = useAuthStore();
 
-  // Categorias simuladas
+  // Categorias de editais
   const categories = ['Música', 'Teatro', 'Dança', 'Artes Visuais', 'Literatura', 'Audiovisual', 'Patrimônio', 'Outros'];
 
   // Função para formatar data
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return '';
     return new Date(date).toLocaleDateString('pt-BR');
   };
 
   // Função para formatar valor monetário
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined) => {
+    if (!value && value !== 0) return 'R$ 0,00';
     return value.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
@@ -45,13 +35,14 @@ const Notices: React.FC = () => {
     switch (status) {
       case 'draft':
         return 'bg-gray-200 text-gray-800';
-      case 'open':
+      case 'published':
         return 'bg-green-100 text-green-800';
       case 'evaluation':
         return 'bg-yellow-100 text-yellow-800';
       case 'result':
         return 'bg-blue-100 text-blue-800';
       case 'closed':
+      case 'canceled':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -63,7 +54,7 @@ const Notices: React.FC = () => {
     switch (status) {
       case 'draft':
         return 'Rascunho';
-      case 'open':
+      case 'published':
         return 'Aberto';
       case 'evaluation':
         return 'Em Avaliação';
@@ -71,6 +62,8 @@ const Notices: React.FC = () => {
         return 'Resultado';
       case 'closed':
         return 'Encerrado';
+      case 'canceled':
+        return 'Cancelado';
       default:
         return status;
     }
@@ -78,75 +71,21 @@ const Notices: React.FC = () => {
 
   // Efeito para carregar os editais
   useEffect(() => {
-    // Simulação de chamada à API
     const fetchNotices = async () => {
       setLoading(true);
       try {
-        // Em produção, substituir por chamada real à API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Dados simulados
-        const mockNotices: Notice[] = [
-          {
-            id: '1',
-            title: 'Edital de Apoio à Cultura 2024',
-            description: 'Apoio a projetos culturais nas áreas de música, teatro e dança.',
-            entityName: 'Secretaria de Cultura do Estado',
-            category: 'Música',
-            budget: 1500000,
-            openingDate: new Date('2024-03-01'),
-            closingDate: new Date('2024-04-30'),
-            status: 'open',
-          },
-          {
-            id: '2',
-            title: 'Prêmio de Artes Visuais',
-            description: 'Premiação para artistas visuais com obras inéditas.',
-            entityName: 'Fundação Municipal de Cultura',
-            category: 'Artes Visuais',
-            budget: 500000,
-            openingDate: new Date('2024-02-15'),
-            closingDate: new Date('2024-03-15'),
-            status: 'evaluation',
-          },
-          {
-            id: '3',
-            title: 'Edital de Audiovisual',
-            description: 'Financiamento para produção de curtas e longas-metragens.',
-            entityName: 'Secretaria Nacional do Audiovisual',
-            category: 'Audiovisual',
-            budget: 3000000,
-            openingDate: new Date('2024-01-10'),
-            closingDate: new Date('2024-02-28'),
-            status: 'closed',
-          },
-          {
-            id: '4',
-            title: 'Programa de Incentivo à Literatura',
-            description: 'Apoio à publicação de obras literárias de novos autores.',
-            entityName: 'Fundação Biblioteca Nacional',
-            category: 'Literatura',
-            budget: 800000,
-            openingDate: new Date('2024-04-01'),
-            closingDate: new Date('2024-05-31'),
-            status: 'draft',
-          },
-          {
-            id: '5',
-            title: 'Edital de Patrimônio Cultural',
-            description: 'Preservação e restauro de patrimônio histórico.',
-            entityName: 'Instituto do Patrimônio Histórico',
-            category: 'Patrimônio',
-            budget: 2500000,
-            openingDate: new Date('2024-03-15'),
-            closingDate: new Date('2024-06-15'),
-            status: 'open',
-          },
-        ];
-
-        setNotices(mockNotices);
+        // Chamada real à API
+        const data = await noticeService.getAll();
+        // Verificar se data é um array antes de definir o estado
+        if (Array.isArray(data)) {
+          setNotices(data);
+        } else {
+          console.error('Dados de editais não estão em formato de array:', data);
+          setNotices([]);
+        }
       } catch (error) {
         console.error('Erro ao carregar editais:', error);
+        setNotices([]);
       } finally {
         setLoading(false);
       }
@@ -156,17 +95,18 @@ const Notices: React.FC = () => {
   }, []);
 
   // Filtragem de editais
-  const filteredNotices = notices.filter(notice => {
-    const matchesSearch = notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notice.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notice.entityName.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredNotices = Array.isArray(notices) ? notices.filter(notice => {
+    const matchesSearch = notice?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          notice?.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (notice?.entity?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = selectedStatus === 'all' || notice.status === selectedStatus;
+    const matchesStatus = selectedStatus === 'all' || notice?.status === selectedStatus;
     
-    const matchesCategory = selectedCategory === 'all' || notice.category === selectedCategory;
+    // Se tivermos categorias nos editais, filtrar por elas
+    const matchesCategory = selectedCategory === 'all'; // Adaptar quando tivermos categorias no modelo
     
     return matchesSearch && matchesStatus && matchesCategory;
-  });
+  }) : [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -214,10 +154,11 @@ const Notices: React.FC = () => {
             >
               <option value="all">Todos os status</option>
               <option value="draft">Rascunho</option>
-              <option value="open">Aberto</option>
+              <option value="published">Aberto</option>
               <option value="evaluation">Em Avaliação</option>
               <option value="result">Resultado</option>
               <option value="closed">Encerrado</option>
+              <option value="canceled">Cancelado</option>
             </select>
           </div>
           
@@ -265,7 +206,7 @@ const Notices: React.FC = () => {
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(notice.status)}`}>
                     {translateStatus(notice.status)}
                   </span>
-                  <span className="text-sm text-gray-500">{notice.category}</span>
+                  <span className="text-sm text-gray-500">Edital</span>
                 </div>
                 
                 {/* Título e descrição */}
@@ -276,7 +217,7 @@ const Notices: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center text-sm text-gray-500">
                     <MapPin size={16} className="mr-2 text-gray-400" />
-                    <span>{notice.entityName}</span>
+                    <span>{notice.entity?.name}</span>
                   </div>
                   <div className="flex items-center text-sm text-gray-500">
                     <DollarSign size={16} className="mr-2 text-gray-400" />
@@ -285,7 +226,7 @@ const Notices: React.FC = () => {
                   <div className="flex items-center text-sm text-gray-500">
                     <Calendar size={16} className="mr-2 text-gray-400" />
                     <span>
-                      {formatDate(notice.openingDate)} a {formatDate(notice.closingDate)}
+                      {formatDate(notice.startDate)} a {formatDate(notice.endDate)}
                     </span>
                   </div>
                 </div>
@@ -296,13 +237,13 @@ const Notices: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center text-xs text-gray-500">
                     <Clock size={14} className="mr-1" />
-                    {notice.status === 'open' ? (
+                    {notice.status === 'published' ? (
                       <span>
                         Encerra em{' '}
-                        {Math.ceil(
-                          (new Date(notice.closingDate).getTime() - new Date().getTime()) /
+                        {notice.registrationEndDate ? Math.ceil(
+                          (new Date(notice.registrationEndDate).getTime() - new Date().getTime()) /
                             (1000 * 60 * 60 * 24)
-                        )}{' '}
+                        ) : '?'}{' '}
                         dias
                       </span>
                     ) : notice.status === 'closed' ? (

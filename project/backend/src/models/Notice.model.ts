@@ -109,7 +109,7 @@ const NoticeSchema = new Schema<INotice>(
 
 // Validação para garantir que a data de término seja após a data de início
 NoticeSchema.pre('validate', function(next) {
-  if (this.startDate && this.endDate && this.startDate >= this.endDate) {
+  if (this.startDate && this.endDate && new Date(this.startDate) >= new Date(this.endDate)) {
     this.invalidate('endDate', 'A data de término deve ser após a data de início');
   }
   next();

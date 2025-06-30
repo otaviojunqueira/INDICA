@@ -3,14 +3,20 @@ import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { User } from '../models';
 import { handleAsync } from '../utils/errorHandler';
+import dotenv from 'dotenv';
+
+// Carrega as variáveis de ambiente
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'indica_secret_key';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 // Função auxiliar para gerar token JWT
-const generateToken = (user: any) => {
-  return jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_SECRET || 'secret_key',
-    { expiresIn: '24h' }
-  );
+const generateToken = (user: any): string => {
+  // Payload como objeto, não como string
+  const payload = { id: user._id, role: user.role };
+  
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 // Controller para autenticação

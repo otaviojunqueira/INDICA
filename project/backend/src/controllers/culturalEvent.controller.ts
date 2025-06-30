@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { Op } from 'sequelize';
 import CulturalEvent from '../models/CulturalEvent.model';
 
 export const createEvent = async (req: Request, res: Response) => {
@@ -9,7 +8,8 @@ export const createEvent = async (req: Request, res: Response) => {
       createdBy: req.user?.id,
     };
 
-    const event = await CulturalEvent.create(eventData);
+    const event = new CulturalEvent(eventData);
+    await event.save();
     return res.status(201).json(event);
   } catch (error) {
     console.error('Erro ao criar evento:', error);
@@ -29,24 +29,23 @@ export const getEvents = async (req: Request, res: Response) => {
       status,
     } = req.query;
 
-    const where: any = {};
+    const filter: any = {};
 
     if (startDate && endDate) {
-      where.startDate = {
-        [Op.between]: [new Date(startDate as string), new Date(endDate as string)],
+      filter.startDate = {
+        $gte: new Date(startDate as string),
+        $lte: new Date(endDate as string)
       };
     }
 
-    if (state) where.state = state;
-    if (city) where.city = city;
-    if (eventType) where.eventType = eventType;
-    if (category) where.category = category;
-    if (status) where.status = status;
+    if (state) filter.state = state;
+    if (city) filter.city = city;
+    if (eventType) filter.eventType = eventType;
+    if (category) filter.category = category;
+    if (status) filter.status = status;
 
-    const events = await CulturalEvent.findAll({
-      where,
-      order: [['startDate', 'ASC']],
-    });
+    const events = await CulturalEvent.find(filter)
+      .sort({ startDate: 1 });
 
     return res.json(events);
   } catch (error) {
@@ -58,7 +57,7 @@ export const getEvents = async (req: Request, res: Response) => {
 export const getEventById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const event = await CulturalEvent.findByPk(id);
+    const event = await CulturalEvent.findById(id);
 
     if (!event) {
       return res.status(404).json({ message: 'Evento não encontrado' });
@@ -74,18 +73,19 @@ export const getEventById = async (req: Request, res: Response) => {
 export const updateEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const event = await CulturalEvent.findByPk(id);
+    const event = await CulturalEvent.findById(id);
 
     if (!event) {
       return res.status(404).json({ message: 'Evento não encontrado' });
     }
 
     // Verifica se o usuário tem permissão para editar o evento
-    if (event.createdBy !== req.user?.id) {
+    if (event.createdBy.toString() !== req.user?.id) {
       return res.status(403).json({ message: 'Sem permissão para editar este evento' });
     }
 
-    await event.update(req.body);
+    Object.assign(event, req.body);
+    await event.save();
     return res.json(event);
   } catch (error) {
     console.error('Erro ao atualizar evento:', error);
@@ -96,18 +96,18 @@ export const updateEvent = async (req: Request, res: Response) => {
 export const deleteEvent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const event = await CulturalEvent.findByPk(id);
+    const event = await CulturalEvent.findById(id);
 
     if (!event) {
       return res.status(404).json({ message: 'Evento não encontrado' });
     }
 
     // Verifica se o usuário tem permissão para deletar o evento
-    if (event.createdBy !== req.user?.id) {
+    if (event.createdBy.toString() !== req.user?.id) {
       return res.status(403).json({ message: 'Sem permissão para deletar este evento' });
     }
 
-    await event.destroy();
+    await CulturalEvent.deleteOne({ _id: event._id });
     return res.status(204).send();
   } catch (error) {
     console.error('Erro ao deletar evento:', error);

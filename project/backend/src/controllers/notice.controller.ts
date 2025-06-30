@@ -131,64 +131,64 @@ export const noticeController = {
   
   // Criar um novo edital (apenas admin)
   create: handleAsync(async (req: Request, res: Response) => {
-    // Validar os dados da requisição
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    
-    // Verificar se o usuário tem permissão (admin)
+      // Validar os dados da requisição
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      // Verificar se o usuário tem permissão (admin)
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Acesso negado' });
-    }
-    
-    const {
-      title,
-      description,
-      entityId,
+        return res.status(403).json({ message: 'Acesso negado' });
+      }
+
+      const {
+        title,
+        description,
+        entityId,
       cityId,
-      startDate,
-      endDate,
-      totalAmount,
-      maxApplicationValue,
-      minApplicationValue,
-      categories,
-      requirements,
-      documents,
-      evaluationCriteria
-    } = req.body;
+        startDate,
+        endDate,
+        totalAmount,
+        maxApplicationValue,
+        minApplicationValue,
+        categories,
+        requirements,
+        documents,
+        evaluationCriteria
+      } = req.body;
     
     // Verificar se a entidade existe
     const entity = await Entity.findById(entityId);
     if (!entity) {
       return res.status(400).json({ message: 'Entidade não encontrada' });
     }
-    
-    // Criar o novo edital
-    const notice = new Notice({
-      title,
-      description,
-      entityId,
+
+      // Criar o novo edital
+      const notice = new Notice({
+        title,
+        description,
+        entityId,
       cityId,
-      startDate,
-      endDate,
-      totalAmount,
-      maxApplicationValue,
-      minApplicationValue,
-      categories: categories || [],
-      requirements: requirements || [],
-      documents: documents || [],
-      evaluationCriteria: evaluationCriteria || []
-    });
-    
-    await notice.save();
-    
-    res.status(201).json({
-      message: 'Edital criado com sucesso',
-      notice
+        startDate,
+        endDate,
+        totalAmount,
+        maxApplicationValue,
+        minApplicationValue,
+        categories: categories || [],
+        requirements: requirements || [],
+        documents: documents || [],
+        evaluationCriteria: evaluationCriteria || []
+      });
+
+      await notice.save();
+
+      res.status(201).json({
+        message: 'Edital criado com sucesso',
+        notice
     });
   }),
-  
+
   // Atualizar edital (apenas admin)
   update: handleAsync(async (req: Request, res: Response) => {
     // Validar os dados da requisição
@@ -219,13 +219,13 @@ export const noticeController = {
     });
     
     await notice.save();
-    
+
     res.json({
       message: 'Edital atualizado com sucesso',
       notice
     });
   }),
-  
+
   // Excluir edital (apenas admin)
   delete: handleAsync(async (req: Request, res: Response) => {
     // Verificar se o usuário tem permissão (admin)
@@ -244,7 +244,7 @@ export const noticeController = {
     // Em vez de excluir, apenas cancelar
     notice.status = 'canceled';
     await notice.save();
-    
+
     res.json({
       message: 'Edital cancelado com sucesso'
     });

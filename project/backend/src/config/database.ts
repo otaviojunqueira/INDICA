@@ -7,17 +7,13 @@ dotenv.config();
 // URI de conexão com o MongoDB (use variável de ambiente ou fallback)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/indica';
 
-// Opções de conexão avançadas para MongoDB
+// Opções de conexão atualizadas para MongoDB
 const options = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   family: 4, // Use IPv4, skip trying IPv6
   maxPoolSize: 10,
   connectTimeoutMS: 10000,
-  retryWrites: true,
-  w: 'majority'
 } as mongoose.ConnectOptions;
 
 // Função para conectar ao MongoDB

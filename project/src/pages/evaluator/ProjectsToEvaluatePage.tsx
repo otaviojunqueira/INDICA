@@ -30,7 +30,9 @@ import {
   FilterList as FilterListIcon,
   AccessTime as AccessTimeIcon
 } from '@mui/icons-material';
-import { mockEvaluationService } from '../../mocks/mockServices';
+import evaluationService from '../../services/evaluation.service';
+import applicationService from '../../services/application.service';
+import noticeService from '../../services/notice.service';
 import { Application } from '../../types';
 
 interface ProjectToEvaluate {

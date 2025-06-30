@@ -14,7 +14,6 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
-  isModified(path: string): boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -72,7 +71,8 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Hash da senha antes de salvar
-UserSchema.pre<IUser>('save', async function(this: IUser, next: any): Promise<void> {
+UserSchema.pre('save', async function(next) {
+  // Somente hash a senha se ela foi modificada (ou é nova)
   if (!this.isModified('password')) return next();
   
   try {
@@ -85,7 +85,7 @@ UserSchema.pre<IUser>('save', async function(this: IUser, next: any): Promise<vo
 });
 
 // Método para verificar a senha
-UserSchema.methods.comparePassword = async function(this: IUser, candidatePassword: string): Promise<boolean> {
+UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 

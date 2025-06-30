@@ -68,7 +68,8 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, setIsMenuOpen }) => {
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Gestão de Editais', href: '/admin/notices' },
     { name: 'Calendário Cultural', href: '/calendario' },
-    { name: 'Avaliadores', href: '/admin/evaluators' },
+    { name: 'Pareceristas', href: '/admin/evaluators' },
+    { name: 'Portal da Transparência', href: '/admin/entity-portals' },
     { name: 'Relatórios', href: '/admin/reports' },
   ];
   

@@ -20,6 +20,31 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { IAgentProfile, IAddress } from '../../types';
 
+// Função auxiliar para verificar se um valor é uma data válida
+const isValidDate = (date: any): boolean => {
+  return date instanceof Date && !isNaN(date.getTime());
+};
+
+// Função para garantir que temos uma data válida ou null
+const ensureValidDate = (date: any): Date | null => {
+  if (!date) return null;
+  
+  if (isValidDate(date)) {
+    return date;
+  }
+  
+  if (typeof date === 'string') {
+    try {
+      const parsedDate = new Date(date);
+      return isValidDate(parsedDate) ? parsedDate : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  return null;
+};
+
 // Esquema de validação
 const validationSchema = Yup.object().shape({
   // Dados Pessoais
@@ -124,9 +149,15 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   onSubmit,
   isLoading = false
 }) => {
+  // Garantir que initialValues.dateOfBirth seja uma data válida
+  const safeInitialValues = {
+    ...initialValues,
+    dateOfBirth: ensureValidDate(initialValues.dateOfBirth)
+  };
+
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={safeInitialValues}
       validationSchema={validationSchema}
       onSubmit={onSubmit}
     >
@@ -146,7 +177,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
                 <Grid item xs={12} sm={6}>
                   <DatePicker
                     label="Data de Nascimento"
-                    value={values.dateOfBirth || null}
+                    value={ensureValidDate(values.dateOfBirth)}
                     onChange={(date: Date | null) => setFieldValue('dateOfBirth', date)}
                     slotProps={{
                       textField: {

@@ -25,7 +25,8 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
-import { mockApplicationService, mockEvaluationService } from '../../mocks/mockServices';
+import evaluationService from '../../services/evaluation.service';
+import applicationService from '../../services/application.service';
 
 interface CriteriaScore {
   criteriaId: string;
@@ -97,7 +98,7 @@ const EvaluationPage: React.FC = () => {
         // Carregar a avaliação
         if (!id) return;
         
-        const evaluationData = await mockEvaluationService.getById(id);
+        const evaluationData = await evaluationService.getById(id);
         setEvaluation(evaluationData as unknown as Evaluation);
         
         // Carregar a inscrição associada
@@ -110,7 +111,7 @@ const EvaluationPage: React.FC = () => {
                 ? evaluationData.applicationId.id
                 : ''
             : '';
-        const applicationData = await mockApplicationService.getApplication(appId);
+        const applicationData = await applicationService.getById(appId);
         setApplication(applicationData as unknown as Application);
         
         // Verificar se todos os critérios já foram avaliados
@@ -206,7 +207,7 @@ const EvaluationPage: React.FC = () => {
         weight: criteria.weight
       }));
       
-      await mockEvaluationService.update(evaluation._id || evaluation.id || '', {
+      await evaluationService.update(evaluation._id || evaluation.id || '', {
         criteriaScores: criteriaData,
         comments: evaluation.comments,
         status: 'in_progress' as 'pending' | 'completed' // Tratamento de tipo
@@ -250,7 +251,7 @@ const EvaluationPage: React.FC = () => {
         weight: criteria.weight
       }));
       
-      await mockEvaluationService.update(evaluation._id || evaluation.id || '', {
+      await evaluationService.update(evaluation._id || evaluation.id || '', {
         criteriaScores: criteriaData,
         comments: evaluation.comments,
         status: 'completed'

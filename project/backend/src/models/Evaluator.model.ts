@@ -2,7 +2,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IEvaluator extends Document {
   userId: mongoose.Types.ObjectId;
-  entityId: mongoose.Types.ObjectId;
   specialties: string[];
   biography: string;
   education: string;
@@ -12,52 +11,38 @@ export interface IEvaluator extends Document {
   updatedAt: Date;
 }
 
-const EvaluatorSchema = new Schema<IEvaluator>(
-  {
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      unique: true
-    },
-    entityId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Entity',
-      required: true
-    },
-    specialties: [{
-      type: String,
-      required: true,
-      trim: true
-    }],
-    biography: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    education: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    experience: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    isActive: {
-      type: Boolean,
-      default: true
-    }
+const EvaluatorSchema = new Schema<IEvaluator>({
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  {
-    timestamps: true
+  specialties: {
+    type: [String],
+    required: true,
+    default: []
+  },
+  biography: {
+    type: String,
+    required: true
+  },
+  education: {
+    type: String,
+    required: true
+  },
+  experience: {
+    type: String,
+    required: true
+  },
+  isActive: {
+    type: Boolean,
+    required: true,
+    default: true
   }
-);
+}, {
+  timestamps: true
+});
 
-// Índices para melhorar a performance das consultas
-EvaluatorSchema.index({ userId: 1 });
-EvaluatorSchema.index({ entityId: 1 });
-EvaluatorSchema.index({ specialties: 1 });
+const Evaluator = mongoose.model<IEvaluator>('Evaluator', EvaluatorSchema);
 
-export default mongoose.model<IEvaluator>('Evaluator', EvaluatorSchema); 
+export default Evaluator; 

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
-  Paper,
   Typography,
   Box,
   Alert,
@@ -183,7 +182,7 @@ const AgentProfilePage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <CalendarToday fontSize="small" color="action" />
                 <Typography variant="body1">
-                  <strong>Data de Nascimento:</strong> {profile?.birthDate ? new Date(profile.birthDate).toLocaleDateString('pt-BR') : 'Não informado'}
+                  <strong>Data de Nascimento:</strong> {profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString('pt-BR') : 'Não informado'}
                 </Typography>
               </Box>
             </Grid>
@@ -199,7 +198,7 @@ const AgentProfilePage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <PersonIcon fontSize="small" color="action" />
                 <Typography variant="body1">
-                  <strong>Raça/Etnia:</strong> {profile?.ethnicity || 'Não informado'}
+                  <strong>Raça/Etnia:</strong> {profile?.raceEthnicity || 'Não informado'}
                 </Typography>
               </Box>
             </Grid>
@@ -220,20 +219,20 @@ const AgentProfilePage: React.FC = () => {
           title="Endereço" 
           icon={<HomeIcon color="primary" />}
         >
-          {profile?.street ? (
+          {profile?.address ? (
             <>
               <Typography variant="body1" paragraph>
-                {profile.street}, {profile.number}
-                {profile.complement && ` - ${profile.complement}`}
+                {profile.address.street}, {profile.address.number}
+                {profile.address.complement && ` - ${profile.address.complement}`}
               </Typography>
               <Typography variant="body1" paragraph>
-                {profile.neighborhood}
+                {profile.address.neighborhood}
               </Typography>
               <Typography variant="body1" paragraph>
-                {profile.city}/{profile.state}
+                {profile.address.city}/{profile.address.state}
               </Typography>
               <Typography variant="body1">
-                CEP: {profile.zipCode}
+                CEP: {profile.address.zipCode}
               </Typography>
             </>
           ) : (

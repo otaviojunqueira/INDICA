@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, UserPlus, User, Building } from 'lucide-react';
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/UI/Button';
 import Card from '../components/UI/Card';
+import cityService from '../services/city.service';
 
 interface RegisterForm {
   name: string;
@@ -17,17 +18,97 @@ interface RegisterForm {
   confirmPassword: string;
   role: 'agent' | 'admin';
   terms: boolean;
+  cityId: string;
+  
+  birthDate?: string;
+  address?: string;
+  
+  responsiblePerson?: string;
+  position?: string;
+  institutionalPhone?: string;
+}
+
+interface City {
+  id: string;
+  name: string;
+}
+
+interface State {
+  sigla: string;
+  nome: string;
 }
 
 const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
+  const [states, setStates] = useState<State[]>([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [loadingCities, setLoadingCities] = useState(false);
+  
   const navigate = useNavigate();
   const { register: registerUser, isLoading } = useAuthStore();
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();
   const watchRole = watch('role', 'agent');
   const watchPassword = watch('password');
+
+  useEffect(() => {
+    const estadosBrasileiros = [
+      { sigla: 'AC', nome: 'Acre' },
+      { sigla: 'AL', nome: 'Alagoas' },
+      { sigla: 'AP', nome: 'Amapá' },
+      { sigla: 'AM', nome: 'Amazonas' },
+      { sigla: 'BA', nome: 'Bahia' },
+      { sigla: 'CE', nome: 'Ceará' },
+      { sigla: 'DF', nome: 'Distrito Federal' },
+      { sigla: 'ES', nome: 'Espírito Santo' },
+      { sigla: 'GO', nome: 'Goiás' },
+      { sigla: 'MA', nome: 'Maranhão' },
+      { sigla: 'MT', nome: 'Mato Grosso' },
+      { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+      { sigla: 'MG', nome: 'Minas Gerais' },
+      { sigla: 'PA', nome: 'Pará' },
+      { sigla: 'PB', nome: 'Paraíba' },
+      { sigla: 'PR', nome: 'Paraná' },
+      { sigla: 'PE', nome: 'Pernambuco' },
+      { sigla: 'PI', nome: 'Piauí' },
+      { sigla: 'RJ', nome: 'Rio de Janeiro' },
+      { sigla: 'RN', nome: 'Rio Grande do Norte' },
+      { sigla: 'RS', nome: 'Rio Grande do Sul' },
+      { sigla: 'RO', nome: 'Rondônia' },
+      { sigla: 'RR', nome: 'Roraima' },
+      { sigla: 'SC', nome: 'Santa Catarina' },
+      { sigla: 'SP', nome: 'São Paulo' },
+      { sigla: 'SE', nome: 'Sergipe' },
+      { sigla: 'TO', nome: 'Tocantins' }
+    ];
+    setStates(estadosBrasileiros);
+  }, []);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      if (!selectedState) {
+        setCities([]);
+        return;
+      }
+      
+      try {
+        setLoadingCities(true);
+        const citiesData = await cityService.getCitiesByState(selectedState);
+        setCities(citiesData);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar cidades';
+        console.error('Erro ao carregar cidades:', errorMessage);
+        toast.error(errorMessage);
+        setCities([]);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+    
+    fetchCities();
+  }, [selectedState]);
 
   const onSubmit = async (data: RegisterForm) => {
     if (data.password !== data.confirmPassword) {
@@ -36,13 +117,20 @@ const Register: React.FC = () => {
     }
 
     try {
-      await registerUser({
-        name: data.name,
-        cpfCnpj: data.cpfCnpj,
-        email: data.email,
-        phone: data.phone,
+      const submitData = {
+        ...data,
         role: data.role,
-      });
+        ...(data.role === 'agent' ? {
+          responsiblePerson: undefined,
+          position: undefined,
+          institutionalPhone: undefined
+        } : {
+          birthDate: undefined,
+          address: undefined
+        })
+      };
+
+      await registerUser(submitData);
       toast.success('Cadastro realizado com sucesso!');
       navigate('/dashboard');
     } catch (error) {
@@ -82,7 +170,6 @@ const Register: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Tipo de Usuário */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Tipo de Usuário
@@ -128,16 +215,16 @@ const Register: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome Completo
+                  {watchRole === 'agent' ? 'Nome Completo' : 'Nome do Órgão'}
                 </label>
                 <input
                   {...register('name', { 
-                    required: 'Nome é obrigatório',
-                    minLength: { value: 2, message: 'Nome deve ter pelo menos 2 caracteres' }
+                    required: `${watchRole === 'agent' ? 'Nome' : 'Nome do Órgão'} é obrigatório`,
+                    minLength: { value: 2, message: `${watchRole === 'agent' ? 'Nome' : 'Nome do Órgão'} deve ter pelo menos 2 caracteres` }
                   })}
                   type="text"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  placeholder="Seu nome completo"
+                  placeholder={watchRole === 'agent' ? 'Seu nome completo' : 'Nome do órgão'}
                 />
                 {errors.name && (
                   <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
@@ -165,6 +252,101 @@ const Register: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {watchRole === 'admin' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="responsiblePerson" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome do Responsável
+                  </label>
+                  <input
+                    {...register('responsiblePerson', { 
+                      required: 'Nome do responsável é obrigatório'
+                    })}
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="Nome do responsável"
+                  />
+                  {errors.responsiblePerson && (
+                    <p className="text-red-500 text-sm mt-1">{errors.responsiblePerson.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-2">
+                    Cargo
+                  </label>
+                  <input
+                    {...register('position', { 
+                      required: 'Cargo é obrigatório'
+                    })}
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="Cargo do responsável"
+                  />
+                  {errors.position && (
+                    <p className="text-red-500 text-sm mt-1">{errors.position.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="institutionalPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Telefone Institucional
+                  </label>
+                  <input
+                    {...register('institutionalPhone', { 
+                      required: 'Telefone institucional é obrigatório'
+                    })}
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="(00) 00000-0000"
+                    onChange={(e) => {
+                      e.target.value = formatPhone(e.target.value);
+                    }}
+                  />
+                  {errors.institutionalPhone && (
+                    <p className="text-red-500 text-sm mt-1">{errors.institutionalPhone.message}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {watchRole === 'agent' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    Data de Nascimento
+                  </label>
+                  <input
+                    {...register('birthDate', { 
+                      required: 'Data de nascimento é obrigatória'
+                    })}
+                    type="date"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  />
+                  {errors.birthDate && (
+                    <p className="text-red-500 text-sm mt-1">{errors.birthDate.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                    Endereço
+                  </label>
+                  <input
+                    {...register('address', { 
+                      required: 'Endereço é obrigatório'
+                    })}
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="Seu endereço completo"
+                  />
+                  {errors.address && (
+                    <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -199,7 +381,7 @@ const Register: React.FC = () => {
                   })}
                   type="text"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  placeholder="(11) 99999-9999"
+                  placeholder="(00) 00000-0000"
                   onChange={(e) => {
                     e.target.value = formatPhone(e.target.value);
                   }}
@@ -222,15 +404,14 @@ const Register: React.FC = () => {
                       minLength: { value: 6, message: 'Senha deve ter pelo menos 6 caracteres' }
                     })}
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                    placeholder="Digite sua senha"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   />
                   <button
                     type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-5 h-5 text-gray-500" /> : <Eye className="w-5 h-5 text-gray-500" />}
                   </button>
                 </div>
                 {errors.password && (
@@ -249,15 +430,14 @@ const Register: React.FC = () => {
                       validate: value => value === watchPassword || 'As senhas não coincidem'
                     })}
                     type={showConfirmPassword ? 'text' : 'password'}
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                    placeholder="Confirme sua senha"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   />
                   <button
                     type="button"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5 text-gray-500" /> : <Eye className="w-5 h-5 text-gray-500" />}
                   </button>
                 </div>
                 {errors.confirmPassword && (
@@ -289,20 +469,64 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              isLoading={isLoading}
-            >
-              Criar Conta
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                  Estado
+                </label>
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  value={selectedState}
+                >
+                  <option value="">Selecione um estado</option>
+                  {states.map((state) => (
+                    <option key={state.sigla} value={state.sigla}>
+                      {state.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Cidade
+                </label>
+                <select
+                  {...register('cityId', { 
+                    required: 'Cidade é obrigatória'
+                  })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  disabled={loadingCities || !selectedState}
+                >
+                  <option value="">Selecione uma cidade</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.cityId && (
+                  <p className="text-red-500 text-sm mt-1">{errors.cityId.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Cadastrando...' : 'Cadastrar'}
+              </Button>
+            </div>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-600">
               Já tem uma conta?{' '}
-              <Link to="/login" className="text-purple-600 hover:text-purple-700 font-medium">
+              <Link to="/login" className="text-purple-600 hover:text-purple-500">
                 Faça login
               </Link>
             </p>

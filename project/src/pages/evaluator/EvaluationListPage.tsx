@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Search, AssignmentTurnedIn, AssignmentLate } from '@mui/icons-material';
-import { mockEvaluationService } from '../../mocks/mockServices';
+import evaluationService from '../../services/evaluation.service';
 import { EvaluationInfo } from '../../types';
 
 // Estender interface EvaluationInfo para incluir status "in_progress" para compatibilidade
@@ -30,7 +30,7 @@ const EvaluationListPage: React.FC = () => {
   useEffect(() => {
     const fetchEvaluations = async () => {
       try {
-        const fetchedEvaluations = await mockEvaluationService.getEvaluationsByEvaluator();
+        const fetchedEvaluations = await evaluationService.getMyEvaluations();
         setEvaluations(fetchedEvaluations as ExtendedEvaluationInfo[]);
       } catch (error) {
         console.error('Erro ao buscar avaliações:', error);

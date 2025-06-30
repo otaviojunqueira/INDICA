@@ -4,7 +4,7 @@ import { Add as AddIcon } from '@mui/icons-material';
 import CulturalCalendar from './CulturalCalendar';
 import EventForm from '../../components/Calendar/EventForm';
 import { useAuthStore } from '../../store/authStore';
-import { culturalEventService } from '../../mocks/culturalEventsMock';
+import culturalEventService from '../../services/culturalEvent.service';
 
 // Interface para os valores do formulário de evento
 interface EventFormValues {
@@ -29,12 +29,12 @@ const CalendarPage: React.FC = () => {
 
   const handleFormSubmit = async (values: EventFormValues) => {
     try {
-      // Usando o serviço mock em vez de chamar uma API real
+      // Usando o serviço real para chamar a API
       await culturalEventService.createEvent({
         ...values,
         startDate: values.startDate || new Date(),
         endDate: values.endDate || new Date(),
-        status: 'ativo'
+        status: 'upcoming'
       });
       
       setIsFormOpen(false);

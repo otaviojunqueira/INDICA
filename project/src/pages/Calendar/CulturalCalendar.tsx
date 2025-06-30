@@ -18,7 +18,7 @@ import {
   CalendarMonth as CalendarIcon, 
   LocationOn as LocationIcon
 } from '@mui/icons-material';
-import { culturalEventService, CulturalEvent } from '../../mocks/culturalEventsMock';
+import culturalEventService, { CulturalEvent } from '../../services/culturalEvent.service';
 
 const estados = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',

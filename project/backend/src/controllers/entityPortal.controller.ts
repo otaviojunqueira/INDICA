@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { EntityPortal, Entity } from '../models';
-import { handleAsync } from '../utils/errorHandler';
+import { handleAsync, ApiError } from '../utils/errorHandler';
 import { IEntityPortal } from '../models/EntityPortal.model';
 import mongoose, { Document } from 'mongoose';
 
@@ -13,6 +13,203 @@ type EntityPortalDocument = Document<unknown, {}, IEntityPortal> &
 
 // Controller para o portal de transparência do ente federado
 export const entityPortalController = {
+  // Listar todos os portais de entidades
+  listEntityPortals: handleAsync(async (req: Request, res: Response) => {
+    const { query, isActive } = req.query;
+    
+    const filter: any = {};
+    
+    // Filtrar por status (ativo/inativo)
+    if (isActive !== undefined) {
+      filter.isActive = isActive === 'true';
+    }
+    
+    // Buscar portais
+    let entityPortals = await EntityPortal.find(filter)
+      .populate('entityId', 'name type')
+      .sort({ title: 1 });
+    
+    // Filtrar por título (pós-consulta)
+    if (query) {
+      const queryStr = query.toString().toLowerCase();
+      entityPortals = entityPortals.filter(portal => 
+        portal.title?.toLowerCase().includes(queryStr)
+      );
+    }
+    
+    res.status(200).json(entityPortals);
+  }),
+
+  // Obter um portal de entidade por ID
+  getEntityPortalById: handleAsync(async (req: Request, res: Response) => {
+    const entityPortal = await EntityPortal.findById(req.params.id)
+      .populate('entityId', 'name type');
+    
+    if (!entityPortal) {
+      res.status(404).json({ message: 'Portal de entidade não encontrado' });
+      return;
+    }
+    
+    res.status(200).json(entityPortal);
+  }),
+
+  // Obter portal de entidade pelo ID da entidade
+  getEntityPortalByEntityId: handleAsync(async (req: Request, res: Response) => {
+    const entityPortal = await EntityPortal.findOne({ entityId: req.params.entityId })
+      .populate('entityId', 'name type');
+    
+    if (!entityPortal) {
+      res.status(404).json({ message: 'Portal de entidade não encontrado' });
+      return;
+    }
+    
+    res.status(200).json(entityPortal);
+  }),
+
+  // Criar um novo portal de entidade
+  createEntityPortal: handleAsync(async (req: Request, res: Response) => {
+    const { 
+      entityId, 
+      title, 
+      description, 
+      logoUrl, 
+      bannerUrl, 
+      primaryColor, 
+      secondaryColor, 
+      contactEmail, 
+      contactPhone, 
+      address, 
+      socialMedia 
+    } = req.body;
+    
+    // Verificar se a entidade existe
+    const entity = await Entity.findById(entityId);
+    
+    if (!entity) {
+      res.status(404).json({ message: 'Entidade não encontrada' });
+      return;
+    }
+    
+    // Verificar se já existe um portal para esta entidade
+    const existingPortal = await EntityPortal.findOne({ entityId });
+    
+    if (existingPortal) {
+      res.status(400).json({ message: 'Esta entidade já possui um portal' });
+      return;
+    }
+    
+    // Criar o portal da entidade
+    const newEntityPortal = new EntityPortal({
+      entityId,
+      title,
+      description,
+      logoUrl,
+      bannerUrl,
+      primaryColor,
+      secondaryColor,
+      contactEmail,
+      contactPhone,
+      address,
+      socialMedia,
+      isActive: true
+    });
+    
+    await newEntityPortal.save();
+    
+    // Retornar o portal criado com dados da entidade
+    const portalWithEntity = await EntityPortal.findById(newEntityPortal._id)
+      .populate('entityId', 'name type');
+    
+    res.status(201).json(portalWithEntity);
+  }),
+
+  // Atualizar um portal de entidade
+  updateEntityPortal: handleAsync(async (req: Request, res: Response) => {
+    const { 
+      title, 
+      description, 
+      logoUrl, 
+      bannerUrl, 
+      primaryColor, 
+      secondaryColor, 
+      contactEmail, 
+      contactPhone, 
+      address, 
+      socialMedia 
+    } = req.body;
+    
+    // Verificar se o portal existe
+    const entityPortal = await EntityPortal.findById(req.params.id);
+    
+    if (!entityPortal) {
+      res.status(404).json({ message: 'Portal de entidade não encontrado' });
+      return;
+    }
+    
+    // Atualizar o portal
+    if (title) entityPortal.title = title;
+    if (description) entityPortal.description = description;
+    if (logoUrl !== undefined) entityPortal.logoUrl = logoUrl;
+    if (bannerUrl !== undefined) entityPortal.bannerUrl = bannerUrl;
+    if (primaryColor !== undefined) entityPortal.primaryColor = primaryColor;
+    if (secondaryColor !== undefined) entityPortal.secondaryColor = secondaryColor;
+    if (contactEmail) entityPortal.contactEmail = contactEmail;
+    if (contactPhone !== undefined) entityPortal.contactPhone = contactPhone;
+    if (address !== undefined) entityPortal.address = address;
+    if (socialMedia !== undefined) entityPortal.socialMedia = socialMedia;
+    
+    await entityPortal.save();
+    
+    // Retornar o portal atualizado com dados da entidade
+    const updatedPortal = await EntityPortal.findById(entityPortal._id)
+      .populate('entityId', 'name type');
+    
+    res.status(200).json(updatedPortal);
+  }),
+
+  // Alterar o status de um portal de entidade (ativar/desativar)
+  updateEntityPortalStatus: handleAsync(async (req: Request, res: Response) => {
+    const { isActive } = req.body;
+    
+    if (isActive === undefined) {
+      res.status(400).json({ message: 'O campo isActive é obrigatório' });
+      return;
+    }
+    
+    // Verificar se o portal existe
+    const entityPortal = await EntityPortal.findById(req.params.id);
+    
+    if (!entityPortal) {
+      res.status(404).json({ message: 'Portal de entidade não encontrado' });
+      return;
+    }
+    
+    // Atualizar o status do portal
+    entityPortal.isActive = isActive;
+    await entityPortal.save();
+    
+    res.status(200).json({ 
+      message: `Portal de entidade ${isActive ? 'ativado' : 'desativado'} com sucesso`,
+      entityPortal
+    });
+  }),
+
+  // Excluir um portal de entidade
+  deleteEntityPortal: handleAsync(async (req: Request, res: Response) => {
+    // Verificar se o portal existe
+    const entityPortal = await EntityPortal.findById(req.params.id);
+    
+    if (!entityPortal) {
+      res.status(404).json({ message: 'Portal de entidade não encontrado' });
+      return;
+    }
+    
+    // Excluir o portal
+    await EntityPortal.deleteOne({ _id: entityPortal._id });
+    
+    res.status(200).json({ message: 'Portal de entidade excluído com sucesso' });
+  }),
+
   // Obter portal por ID da entidade
   getPortalByEntityId: handleAsync(async (req: Request, res: Response) => {
     const { entityId } = req.params;
@@ -21,10 +218,11 @@ export const entityPortalController = {
     const portal = await EntityPortal.findOne({ entityId });
     
     if (!portal) {
-      return res.status(404).json({ message: 'Portal não encontrado' });
+      res.status(404).json({ message: 'Portal de entidade não encontrado' });
+      return;
     }
     
-    res.json(portal);
+    res.status(200).json(portal);
   }),
   
   // Criar ou atualizar portal (apenas admin da entidade)
