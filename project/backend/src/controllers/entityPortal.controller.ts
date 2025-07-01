@@ -32,9 +32,10 @@ export const entityPortalController = {
     // Filtrar por título (pós-consulta)
     if (query) {
       const queryStr = query.toString().toLowerCase();
-      entityPortals = entityPortals.filter(portal => 
-        portal.title?.toLowerCase().includes(queryStr)
-      );
+      entityPortals = entityPortals.filter(portal => {
+        const portalObj = portal.toObject() as IEntityPortal;
+        return portalObj.title?.toLowerCase().includes(queryStr);
+      });
     }
     
     res.status(200).json(entityPortals);
@@ -146,17 +147,18 @@ export const entityPortalController = {
       return;
     }
     
-    // Atualizar o portal
-    if (title) entityPortal.title = title;
-    if (description) entityPortal.description = description;
-    if (logoUrl !== undefined) entityPortal.logoUrl = logoUrl;
-    if (bannerUrl !== undefined) entityPortal.bannerUrl = bannerUrl;
-    if (primaryColor !== undefined) entityPortal.primaryColor = primaryColor;
-    if (secondaryColor !== undefined) entityPortal.secondaryColor = secondaryColor;
-    if (contactEmail) entityPortal.contactEmail = contactEmail;
-    if (contactPhone !== undefined) entityPortal.contactPhone = contactPhone;
-    if (address !== undefined) entityPortal.address = address;
-    if (socialMedia !== undefined) entityPortal.socialMedia = socialMedia;
+    // Atualizar o portal (usando cast para any)
+    const portalDoc = entityPortal as any;
+    if (title) portalDoc.title = title;
+    if (description) portalDoc.description = description;
+    if (logoUrl !== undefined) portalDoc.logoUrl = logoUrl;
+    if (bannerUrl !== undefined) portalDoc.bannerUrl = bannerUrl;
+    if (primaryColor !== undefined) portalDoc.primaryColor = primaryColor;
+    if (secondaryColor !== undefined) portalDoc.secondaryColor = secondaryColor;
+    if (contactEmail) portalDoc.contactEmail = contactEmail;
+    if (contactPhone !== undefined) portalDoc.contactPhone = contactPhone;
+    if (address !== undefined) portalDoc.address = address;
+    if (socialMedia !== undefined) portalDoc.socialMedia = socialMedia;
     
     await entityPortal.save();
     
@@ -184,8 +186,7 @@ export const entityPortalController = {
       return;
     }
     
-    // Atualizar o status do portal
-    entityPortal.isActive = isActive;
+    (entityPortal as any).isActive = isActive;
     await entityPortal.save();
     
     res.status(200).json({ 
