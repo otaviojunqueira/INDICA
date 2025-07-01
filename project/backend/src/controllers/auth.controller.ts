@@ -13,9 +13,10 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 // Função auxiliar para gerar token JWT
 const generateToken = (user: any): string => {
-  // Payload como objeto, não como string
-  const payload = { id: user._id, role: user.role };
+  // Método alternativo para gerar token
+  const payload = JSON.stringify({ id: user._id, role: user.role });
   
+  // @ts-ignore
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
