@@ -12,8 +12,17 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Obtenha a URL do frontend da variável de ambiente ou use um valor padrão
+const frontendURL = process.env.FRONTEND_URL || 'https://indica-teal.vercel.app';
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    frontendURL,
+    'http://localhost:5173' // Para desenvolvimento local
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
