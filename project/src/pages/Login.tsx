@@ -31,11 +31,8 @@ const Login: React.FC = () => {
       // Remove qualquer token antigo
       localStorage.removeItem('auth_token');
       
-      // Remove a formatação do CPF/CNPJ (deixa apenas os números)
-      const cpfCnpjLimpo = data.cpfCnpj.replace(/\D/g, '');
-      
       // Tenta fazer login com o CPF/CNPJ sem formatação
-      await login(cpfCnpjLimpo, data.password);
+      await login(data.cpfCnpj, data.password);
       
       // Verifica se o token foi salvo corretamente
       const token = localStorage.getItem('auth_token');

@@ -14,6 +14,7 @@ export const USE_MOCK_DATA = true;
 // Serviço de autenticação simulado
 export const authService = {
   login: async (cpfCnpj: string, password: string): Promise<{user: User, token: string}> => {
+    console.log('MOCK LOGIN RECEBIDO:', { cpfCnpj, password });
     // Simula um delay de rede
     await new Promise(resolve => setTimeout(resolve, 800));
     
@@ -26,7 +27,7 @@ export const authService = {
     }
     
     // Login para admin
-    if (cpfCnpj === '987.654.321-00' && password === 'admin123') {
+    if (cpfCnpj.trim() === '987.654.321-00' && password.trim() === 'admin123') {
       return {
         user: users.find(u => u.role === 'admin')!,
         token: 'mock-jwt-token-admin'
