@@ -5,6 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { connectDB } from './config/database';
 import routes from './routes';
+import authRoutes from './routes/auth.routes';
 
 // Configuração das variáveis de ambiente
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rotas API
 app.use('/api', routes);
+app.use('/auth', authRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {
