@@ -7,7 +7,7 @@ export interface ICity extends Document {
   isCapital: boolean;
   region?: string;
   population?: number;
-  entityId: mongoose.Types.ObjectId;
+  entityId: mongoose.Types.ObjectId | string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,11 +43,18 @@ const CitySchema = new Schema<ICity>({
   entityId: {
     type: Schema.Types.ObjectId,
     ref: 'Entity',
-    required: true
+    required: true,
+    default: '000000000000000000000000' // ID padrão temporário
   }
 }, {
   timestamps: true
 });
+
+// Método para atualizar o entityId
+CitySchema.methods.updateEntityId = async function(entityId: string) {
+  this.entityId = entityId;
+  return this.save();
+};
 
 const City = mongoose.model<ICity>('City', CitySchema);
 

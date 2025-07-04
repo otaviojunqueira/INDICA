@@ -124,11 +124,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
     register: async (userData) => {
       set({ isLoading: true });
       try {
+        console.log('Iniciando registro de usuário:', userData);
         let response: AuthResponse;
         if (USE_MOCK_DATA) {
           response = await authService.register(userData as User);
         } else {
+          console.log('Enviando dados para API:', API_ENDPOINTS.AUTH.REGISTER, userData);
           const apiResponse = await axios.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, userData);
+          console.log('Resposta da API de registro:', apiResponse.data);
           response = apiResponse.data;
         }
         

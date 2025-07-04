@@ -9,7 +9,7 @@ import {
 import { User, IAgentProfile, Notice, Application, CulturalGroup, Evaluation, EvaluationInfo } from '../types';
 
 // Flag para determinar se usa dados simulados
-export const USE_MOCK_DATA = true;
+export const USE_MOCK_DATA = false;
 
 // Serviço de autenticação simulado
 export const authService = {

@@ -1,11 +1,12 @@
 import api from '../config/axios';
 
 export interface City {
+  _id: string;
   id: string;
   name: string;
   state: string;
-  ibgeCode?: string;
   isCapital: boolean;
+  entityId?: string;
   region?: string;
   population?: number;
 }
@@ -13,7 +14,7 @@ export interface City {
 export interface CityInput {
   name: string;
   state: string;
-  ibgeCode?: string;
+  entityId?: string;
   isCapital?: boolean;
   region?: string;
   population?: number;
@@ -36,6 +37,25 @@ const cityService = {
   getCitiesByState: async (state: string) => {
     const response = await api.get(`/cities/state/${state}`);
     return response.data;
+  },
+
+  // Buscar cidade por nome e estado
+  getCityByNameAndState: async (name: string, state: string) => {
+    const response = await api.get('/cities/search', { params: { name, state } });
+    return response.data;
+  },
+
+  // Buscar ou criar cidade
+  findOrCreateCity: async (cityData: CityInput) => {
+    console.log('Chamando findOrCreateCity com dados:', cityData);
+    try {
+      const response = await api.post('/cities/find-or-create', cityData);
+      console.log('Resposta de findOrCreateCity:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erro em findOrCreateCity:', error);
+      throw error;
+    }
   },
 
   // Criar uma nova cidade

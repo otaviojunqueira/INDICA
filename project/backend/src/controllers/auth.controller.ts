@@ -13,60 +13,85 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 // Função auxiliar para gerar token JWT
 const generateToken = (user: any): string => {
-  // Método alternativo para gerar token
-  const payload = JSON.stringify({ id: user._id, role: user.role });
-  
-  // @ts-ignore
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(
+    { id: user._id, role: user.role },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 };
 
 // Controller para autenticação
 export const authController = {
   // Registrar um novo usuário
   register: handleAsync(async (req: Request, res: Response) => {
-    // Validar os dados da requisição
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { cpfCnpj, name, email, password, phone, role = 'agent', entityId, cityId } = req.body;
-
-    // Verificar se o usuário já existe
-    const existingUser = await User.findOne({ $or: [{ email }, { cpfCnpj }] });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Usuário já existe com este email ou CPF/CNPJ' });
-    }
-
-    // Criar o novo usuário
-    const user = new User({
-      cpfCnpj,
-      name,
-      email,
-      password,
-      phone,
-      role,
-      entityId,
-      cityId
-    });
-
-    await user.save();
-
-    // Gerar token JWT
-    const token = generateToken(user);
-
-    res.status(201).json({
-      message: 'Usuário registrado com sucesso',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        entityId: user.entityId,
-        cityId: user.cityId
+    try {
+      // Validar os dados da requisição
+      console.log('Requisição de registro recebida:', req.body);
+      
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        console.log('Erros de validação:', errors.array());
+        return res.status(400).json({ errors: errors.array() });
       }
-    });
+
+      const { cpfCnpj, name, email, password, phone, role = 'agent', entityId, cityId } = req.body;
+      console.log('Dados extraídos da requisição:', { cpfCnpj, name, email, phone, role, entityId, cityId });
+
+      // Verificar se o usuário já existe
+      const existingUser = await User.findOne({ $or: [{ email }, { cpfCnpj }] });
+      if (existingUser) {
+        console.log('Usuário já existe:', existingUser);
+        if (existingUser.email === email) {
+          return res.status(400).json({ message: 'Email já está em uso' });
+        }
+        return res.status(400).json({ message: 'CPF/CNPJ já está cadastrado' });
+      }
+
+      // Criar o novo usuário
+      console.log('Criando novo usuário com dados:', { cpfCnpj, name, email, phone, role, entityId, cityId });
+      
+      // Limpar o CPF/CNPJ (remover pontos, traços e barras)
+      const cleanCpfCnpj = cpfCnpj.replace(/[^\d]/g, '');
+      console.log('CPF/CNPJ limpo:', cleanCpfCnpj);
+      
+      const user = new User({
+        cpfCnpj: cleanCpfCnpj, // Usar o CPF/CNPJ limpo
+        name,
+        email,
+        password,
+        phone,
+        role,
+        entityId,
+        cityId
+      });
+
+      await user.save();
+      console.log('Usuário criado com sucesso:', user);
+
+      // Gerar token JWT
+      const token = generateToken(user);
+
+      res.status(201).json({
+        message: 'Usuário registrado com sucesso',
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          entityId: user.entityId,
+          cityId: user.cityId
+        }
+      });
+    } catch (error: any) {
+      console.error('Erro ao registrar usuário:', error);
+      if (error.name === 'ValidationError') {
+        console.error('Erro de validação:', error.message);
+        const errors = Object.values(error.errors).map((err: any) => err.message);
+        return res.status(400).json({ message: 'Erro de validação', errors });
+      }
+      res.status(500).json({ message: 'Erro ao registrar usuário', error: error.message });
+    }
   }),
 
   // Login de usuário
@@ -76,18 +101,18 @@ export const authController = {
     // Encontrar o usuário
     const user = await User.findOne({ cpfCnpj });
     if (!user) {
-      return res.status(401).json({ message: 'Credenciais inválidas' });
+      return res.status(401).json({ message: 'CPF/CNPJ não encontrado no sistema' });
     }
 
     // Verificar se o usuário está ativo
     if (!user.isActive) {
-      return res.status(401).json({ message: 'Usuário desativado' });
+      return res.status(401).json({ message: 'Usuário está desativado. Entre em contato com o administrador.' });
     }
 
     // Verificar a senha
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Credenciais inválidas' });
+      return res.status(401).json({ message: 'Senha incorreta' });
     }
 
     // Gerar token JWT
@@ -109,7 +134,7 @@ export const authController = {
 
   // Obter dados do usuário atual
   getCurrentUser: handleAsync(async (req: Request, res: Response) => {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const user = await User.findById(userId)
       .select('-password')
@@ -142,7 +167,7 @@ export const authController = {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { currentPassword, newPassword } = req.body;
 
     // Buscar usuário

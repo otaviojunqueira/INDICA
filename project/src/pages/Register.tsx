@@ -5,7 +5,6 @@ import { Eye, EyeOff, UserPlus, User, Building } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
-import Button from '../components/UI/Button';
 import Card from '../components/UI/Card';
 import cityService from '../services/city.service';
 
@@ -28,11 +27,6 @@ interface RegisterForm {
   institutionalPhone?: string;
 }
 
-interface City {
-  id: string;
-  name: string;
-}
-
 interface State {
   sigla: string;
   nome: string;
@@ -41,15 +35,15 @@ interface State {
 const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [cities, setCities] = useState<City[]>([]);
   const [states, setStates] = useState<State[]>([]);
   const [selectedState, setSelectedState] = useState('');
-  const [loadingCities, setLoadingCities] = useState(false);
+  const [cityName, setCityName] = useState('');
+  const [isCreatingCity, setIsCreatingCity] = useState(false);
   
   const navigate = useNavigate();
   const { register: registerUser, isLoading } = useAuthStore();
   
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<RegisterForm>();
   const watchRole = watch('role', 'agent');
   const watchPassword = watch('password');
 
@@ -86,37 +80,48 @@ const Register: React.FC = () => {
     setStates(estadosBrasileiros);
   }, []);
 
-  useEffect(() => {
-    const fetchCities = async () => {
-      if (!selectedState) {
-        setCities([]);
-        return;
-      }
-      
-      try {
-        setLoadingCities(true);
-        const citiesData = await cityService.getCitiesByState(selectedState);
-        setCities(citiesData);
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar cidades';
-        console.error('Erro ao carregar cidades:', errorMessage);
-        toast.error(errorMessage);
-        setCities([]);
-      } finally {
-        setLoadingCities(false);
-      }
-    };
-    
-    fetchCities();
-  }, [selectedState]);
-
   const onSubmit = async (data: RegisterForm) => {
+    // Validar senhas
     if (data.password !== data.confirmPassword) {
       toast.error('As senhas não coincidem');
       return;
     }
 
     try {
+      console.log('Iniciando processo de cadastro', { data, cityName, selectedState });
+      
+      // Processar cidade apenas se o estado e nome da cidade estiverem preenchidos
+      if (cityName && selectedState) {
+        setIsCreatingCity(true);
+        try {
+          // Buscar ou criar a cidade
+          console.log('Buscando/criando cidade com nome:', cityName, 'e estado:', selectedState);
+          const cityResponse = await cityService.findOrCreateCity({
+            name: cityName,
+            state: selectedState
+          });
+          
+          console.log('Resposta da cidade:', cityResponse);
+          
+          // Atualizar o ID da cidade no formulário
+          const cityId = cityResponse._id || cityResponse.id;
+          console.log('ID da cidade definido:', cityId);
+          data.cityId = cityId;
+          setValue('cityId', cityId);
+        } catch (error) {
+          console.error('Erro ao criar/buscar cidade:', error);
+          toast.error('Erro ao processar a cidade. Tente novamente.');
+          setIsCreatingCity(false);
+          return;
+        }
+        setIsCreatingCity(false);
+      } else {
+        console.log('Cidade ou estado não selecionados:', { cityName, selectedState });
+        toast.error('Por favor, selecione um estado e digite o nome da cidade');
+        return;
+      }
+
+      // Preparar dados para envio
       const submitData = {
         ...data,
         role: data.role,
@@ -130,20 +135,34 @@ const Register: React.FC = () => {
         })
       };
 
+      console.log('Enviando dados para registro:', submitData);
       await registerUser(submitData);
+      console.log('Cadastro realizado com sucesso');
       toast.success('Cadastro realizado com sucesso!');
       navigate('/dashboard');
     } catch (error) {
+      console.error('Erro ao realizar cadastro:', error);
       toast.error('Erro ao realizar cadastro. Tente novamente.');
     }
   };
 
   const formatCpfCnpj = (value: string) => {
     const numbers = value.replace(/\D/g, '');
+    
+    // Formatar como CPF (11 dígitos)
     if (numbers.length <= 11) {
-      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else {
-      return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+      if (numbers.length < 3) return numbers;
+      if (numbers.length < 6) return numbers.replace(/^(\d{3})/, '$1.');
+      if (numbers.length < 9) return numbers.replace(/^(\d{3})(\d{3})/, '$1.$2.');
+      return numbers.replace(/^(\d{3})(\d{3})(\d{3})/, '$1.$2.$3-').slice(0, 14);
+    } 
+    // Formatar como CNPJ (14 dígitos)
+    else {
+      if (numbers.length < 3) return numbers;
+      if (numbers.length < 6) return numbers.replace(/^(\d{2})/, '$1.');
+      if (numbers.length < 9) return numbers.replace(/^(\d{2})(\d{3})/, '$1.$2.');
+      if (numbers.length < 13) return numbers.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3/');
+      return numbers.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4-').slice(0, 18);
     }
   };
 
@@ -169,7 +188,13 @@ const Register: React.FC = () => {
             <p className="text-gray-600 mt-2">Crie sua conta e comece a usar a plataforma</p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault(); // Prevenir o comportamento padrão
+              console.log('Formulário submetido via evento de formulário - isso não deveria acontecer');
+            }} 
+            className="space-y-6"
+          >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Tipo de Usuário
@@ -478,6 +503,7 @@ const Register: React.FC = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   onChange={(e) => setSelectedState(e.target.value)}
                   value={selectedState}
+                  required
                 >
                   <option value="">Selecione um estado</option>
                   {states.map((state) => (
@@ -486,40 +512,66 @@ const Register: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                {!selectedState && (
+                  <p className="text-red-500 text-sm mt-1">Estado é obrigatório</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="cityName" className="block text-sm font-medium text-gray-700 mb-2">
                   Cidade
                 </label>
-                <select
-                  {...register('cityId', { 
-                    required: 'Cidade é obrigatória'
-                  })}
+                <input
+                  type="text"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  disabled={loadingCities || !selectedState}
-                >
-                  <option value="">Selecione uma cidade</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.cityId && (
-                  <p className="text-red-500 text-sm mt-1">{errors.cityId.message}</p>
+                  placeholder="Digite o nome da sua cidade"
+                  value={cityName}
+                  onChange={(e) => setCityName(e.target.value)}
+                  disabled={!selectedState || isCreatingCity}
+                  required
+                />
+                {!cityName && selectedState && (
+                  <p className="text-red-500 text-sm mt-1">Cidade é obrigatória</p>
                 )}
+                <input
+                  type="hidden"
+                  {...register('cityId', { required: 'Cidade é obrigatória' })}
+                />
               </div>
             </div>
 
             <div>
-              <Button
-                type="submit"
-                className="w-full"
+              <button
+                type="button"
+                className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors"
                 disabled={isLoading}
+                onClick={async () => {
+                  console.log('Botão de cadastro clicado');
+                  if (selectedState && cityName) {
+                    try {
+                      // Buscar ou criar a cidade primeiro
+                      const cityResponse = await cityService.findOrCreateCity({
+                        name: cityName,
+                        state: selectedState
+                      });
+                      
+                      // Atualizar o ID da cidade no formulário
+                      const cityId = cityResponse._id || cityResponse.id;
+                      setValue('cityId', cityId);
+                      
+                      // Submeter o formulário
+                      handleSubmit(onSubmit)();
+                    } catch (error) {
+                      console.error('Erro ao processar cadastro:', error);
+                      toast.error('Erro ao processar cadastro. Tente novamente.');
+                    }
+                  } else {
+                    toast.error('Por favor, selecione um estado e digite o nome da cidade');
+                  }
+                }}
               >
-                {isLoading ? 'Cadastrando...' : 'Cadastrar'}
-              </Button>
+                {isLoading ? 'Processando...' : 'Cadastrar'}
+              </button>
             </div>
           </form>
 

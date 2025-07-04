@@ -2,59 +2,87 @@ import api from '../config/axios';
 
 export interface Notice {
   id: string;
+  _id?: string;
   title: string;
   description: string;
-  startDate: Date;
-  endDate: Date;
-  registrationStartDate: Date;
-  registrationEndDate: Date;
   entityId: string;
-  budget?: number;
-  attachments?: string[];
-  requirements?: string[];
-  criteria?: Array<{
-    name: string;
-    description: string;
-    weight: number;
-  }>;
-  status: 'draft' | 'published' | 'closed' | 'canceled';
-  createdAt: Date;
-  updatedAt: Date;
+  cityId?: string;
   entity?: {
-    id: string;
     name: string;
   };
+  city?: {
+    name: string;
+    state: string;
+  };
+  startDate: Date;
+  endDate: Date;
+  totalAmount: number;
+  maxApplicationValue: number;
+  minApplicationValue: number;
+  categories: string[];
+  requirements: string[];
+  documents: string[];
+  evaluationCriteria: EvaluationCriteria[];
+  status: 'draft' | 'published' | 'evaluation' | 'result' | 'closed' | 'canceled';
+  createdAt: Date;
+  updatedAt: Date;
+  isFromUserCity?: boolean;
+}
+
+export interface EvaluationCriteria {
+  name: string;
+  weight: number;
+  description: string;
 }
 
 export interface NoticeInput {
   title: string;
   description: string;
+  entityId: string;
+  cityId?: string;
   startDate: Date;
   endDate: Date;
-  registrationStartDate: Date;
-  registrationEndDate: Date;
-  budget?: number;
-  attachments?: string[];
-  requirements?: string[];
-  criteria?: Array<{
-    name: string;
-    description: string;
-    weight: number;
-  }>;
+  totalAmount: number;
+  maxApplicationValue: number;
+  minApplicationValue: number;
+  categories: string[];
+  requirements: string[];
+  documents: string[];
+  evaluationCriteria: EvaluationCriteria[];
 }
 
 export interface NoticeQueryParams {
   status?: string;
-  entityId?: string;
+  category?: string;
+  entity?: string;
+  city?: string;
   startDate?: string;
   endDate?: string;
-  search?: string;
+  query?: string;
+  page?: number;
+  limit?: number;
 }
 
 const noticeService = {
   // Listar todos os editais
   getAll: async (params?: NoticeQueryParams) => {
     const response = await api.get('/notices', { params });
+    
+    if (response.data && response.data.notices) {
+      const notices = response.data.notices.map((notice: Notice) => {
+        return {
+          ...notice,
+          id: notice._id || notice.id,
+          isFromUserCity: notice.city && notice.city.name ? true : false
+        };
+      });
+      
+      return {
+        notices,
+        pagination: response.data.pagination
+      };
+    }
+    
     return response.data;
   },
   

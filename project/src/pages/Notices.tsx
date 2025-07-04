@@ -10,6 +10,12 @@ const Notices: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 1
+  });
   const { user, isAuthenticated } = useAuthStore();
 
   // Categorias de editais
@@ -74,14 +80,46 @@ const Notices: React.FC = () => {
     const fetchNotices = async () => {
       setLoading(true);
       try {
-        // Chamada real à API
-        const data = await noticeService.getAll();
-        // Verificar se data é um array antes de definir o estado
-        if (Array.isArray(data)) {
-          setNotices(data);
+        // Chamada à API com os filtros aplicados
+        const params = {
+          status: selectedStatus !== 'all' ? selectedStatus : undefined,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          query: searchTerm || undefined,
+          page: pagination.page,
+          limit: pagination.limit
+        };
+
+        const data = await noticeService.getAll(params);
+        
+        // Verificar se data tem o formato esperado
+        if (data && data.notices) {
+          // Marcar os editais que são da cidade do usuário
+          // Os primeiros editais retornados pelo backend são os da cidade do usuário
+          const userCityNotices = [];
+          const otherNotices = [];
+          
+          // Separar os editais da cidade do usuário dos demais
+          for (const notice of data.notices) {
+            if (user && user.cityId && notice.cityId === user.cityId) {
+              notice.isFromUserCity = true;
+              userCityNotices.push(notice);
+            } else {
+              notice.isFromUserCity = false;
+              otherNotices.push(notice);
+            }
+          }
+          
+          // Combinar os editais, com os da cidade do usuário primeiro
+          setNotices([...userCityNotices, ...otherNotices]);
+          setPagination(data.pagination || {
+            total: data.notices.length,
+            page: 1,
+            limit: 10,
+            pages: 1
+          });
         } else {
-          console.error('Dados de editais não estão em formato de array:', data);
-          setNotices([]);
+          console.error('Formato de resposta inesperado:', data);
+          setNotices(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error('Erro ao carregar editais:', error);
@@ -92,21 +130,10 @@ const Notices: React.FC = () => {
     };
 
     fetchNotices();
-  }, []);
+  }, [selectedStatus, selectedCategory, searchTerm, pagination.page, user]);
 
   // Filtragem de editais
-  const filteredNotices = Array.isArray(notices) ? notices.filter(notice => {
-    const matchesSearch = notice?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          notice?.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (notice?.entity?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = selectedStatus === 'all' || notice?.status === selectedStatus;
-    
-    // Se tivermos categorias nos editais, filtrar por elas
-    const matchesCategory = selectedCategory === 'all'; // Adaptar quando tivermos categorias no modelo
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  }) : [];
+  const filteredNotices = notices;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -193,8 +220,68 @@ const Notices: React.FC = () => {
           <p className="text-gray-500">Nenhum edital encontrado com os filtros selecionados.</p>
         </div>
       ) : (
+        <div>
+          {/* Editais da cidade do usuário */}
+          {isAuthenticated && user?.cityId && filteredNotices.some(notice => notice.isFromUserCity) && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Editais da sua cidade</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredNotices
+                  .filter(notice => notice.isFromUserCity)
+                  .map((notice) => (
+                    <Link
+                      to={`/notices/${notice.id}`}
+                      key={notice.id}
+                      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border-l-4 border-purple-500"
+                    >
+                      <div className="p-5">
+                        {/* Status */}
+                        <div className="flex justify-between items-center mb-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(notice.status)}`}>
+                            {translateStatus(notice.status)}
+                          </span>
+                          <span className="text-sm text-gray-500">Edital</span>
+                        </div>
+                        
+                        {/* Título e descrição */}
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">{notice.title}</h2>
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{notice.description}</p>
+                        
+                        {/* Metadados */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center text-gray-600">
+                            <Calendar size={16} className="mr-2" />
+                            <span>Inscrições: {formatDate(notice.startDate)} até {formatDate(notice.endDate)}</span>
+                          </div>
+                          
+                          {notice.city && (
+                            <div className="flex items-center text-gray-600">
+                              <MapPin size={16} className="mr-2" />
+                              <span>{notice.city.name} - {notice.city.state}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center text-gray-600">
+                            <DollarSign size={16} className="mr-2" />
+                            <span>Valor: {formatCurrency(notice.totalAmount)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Outros editais */}
+          <div>
+            {isAuthenticated && user?.cityId && filteredNotices.some(notice => notice.isFromUserCity) && (
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Outros editais</h2>
+            )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNotices.map((notice) => (
+              {filteredNotices
+                .filter(notice => !notice.isFromUserCity)
+                .map((notice) => (
             <Link
               to={`/notices/${notice.id}`}
               key={notice.id}
@@ -214,49 +301,74 @@ const Notices: React.FC = () => {
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">{notice.description}</p>
                 
                 {/* Metadados */}
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <MapPin size={16} className="mr-2 text-gray-400" />
-                    <span>{notice.entity?.name}</span>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center text-gray-600">
+                          <Calendar size={16} className="mr-2" />
+                          <span>Inscrições: {formatDate(notice.startDate)} até {formatDate(notice.endDate)}</span>
                   </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <DollarSign size={16} className="mr-2 text-gray-400" />
-                    <span>{formatCurrency(notice.budget)}</span>
+                        
+                        {notice.city && (
+                          <div className="flex items-center text-gray-600">
+                            <MapPin size={16} className="mr-2" />
+                            <span>{notice.city.name} - {notice.city.state}</span>
                   </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar size={16} className="mr-2 text-gray-400" />
-                    <span>
-                      {formatDate(notice.startDate)} a {formatDate(notice.endDate)}
-                    </span>
+                        )}
+                        
+                        <div className="flex items-center text-gray-600">
+                          <DollarSign size={16} className="mr-2" />
+                          <span>Valor: {formatCurrency(notice.totalAmount)}</span>
                   </div>
                 </div>
               </div>
-              
-              {/* Rodapé */}
-              <div className="bg-gray-50 px-5 py-3 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Clock size={14} className="mr-1" />
-                    {notice.status === 'published' ? (
-                      <span>
-                        Encerra em{' '}
-                        {notice.registrationEndDate ? Math.ceil(
-                          (new Date(notice.registrationEndDate).getTime() - new Date().getTime()) /
-                            (1000 * 60 * 60 * 24)
-                        ) : '?'}{' '}
-                        dias
-                      </span>
-                    ) : notice.status === 'closed' ? (
-                      <span>Encerrado</span>
-                    ) : (
-                      <span>{translateStatus(notice.status)}</span>
-                    )}
+                  </Link>
+                ))}
                   </div>
-                  <span className="text-purple-600 text-sm font-medium">Ver detalhes</span>
                 </div>
               </div>
-            </Link>
+      )}
+
+      {/* Paginação */}
+      {pagination.pages > 1 && (
+        <div className="mt-8 flex justify-center">
+          <nav className="flex items-center space-x-2">
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+              disabled={pagination.page === 1}
+              className={`px-3 py-1 rounded-md ${
+                pagination.page === 1
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Anterior
+            </button>
+            
+            {[...Array(pagination.pages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPagination(prev => ({ ...prev, page: i + 1 }))}
+                className={`px-3 py-1 rounded-md ${
+                  pagination.page === i + 1
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {i + 1}
+              </button>
           ))}
+            
+            <button
+              onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+              disabled={pagination.page === pagination.pages}
+              className={`px-3 py-1 rounded-md ${
+                pagination.page === pagination.pages
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Próxima
+            </button>
+          </nav>
         </div>
       )}
     </div>

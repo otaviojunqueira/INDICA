@@ -29,8 +29,17 @@ const validateUpdatePassword = [
 ];
 
 // Rotas públicas
-router.post('/register', validateRegister, authController.register);
+router.post('/register', (req, res, next) => {
+  console.log('Rota de registro acessada, corpo da requisição:', req.body);
+  next();
+}, validateRegister, authController.register);
 router.post('/login', validateLogin, authController.login);
+
+// Rota de teste para verificar se o servidor está respondendo
+router.get('/test-connection', (req, res) => {
+  console.log('Rota de teste acessada!');
+  res.json({ message: 'Conexão com o backend estabelecida com sucesso!' });
+});
 
 // Rotas protegidas
 router.get('/me', authMiddleware, authController.getCurrentUser);

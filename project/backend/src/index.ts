@@ -20,13 +20,25 @@ const frontendURL = process.env.FRONTEND_URL || 'https://indica-teal.vercel.app'
 app.use(cors({
   origin: [
     frontendURL,
-    'http://localhost:5173' // Para desenvolvimento local
+    'http://localhost:5173', // Para desenvolvimento local
+    'http://localhost:3000',
+    '*' // Permitir todas as origens (apenas para depuração)
   ],
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+// Log de todas as requisições
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`, { 
+    body: req.body,
+    query: req.query,
+    params: req.params
+  });
+  next();
+});
 
 // Diretório de uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
