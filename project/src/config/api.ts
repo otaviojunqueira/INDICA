@@ -15,11 +15,20 @@ export const API_ENDPOINTS = {
   USERS: {
     BASE: `${API_URL}/users`,
     PROFILE: `${API_URL}/users/profile`,
+    ENTITIES: `${API_URL}/users/entities`,
+    ENTITY_SEARCH: `${API_URL}/users/entities/search`,
   },
   
   // Entidades
   ENTITIES: {
     BASE: `${API_URL}/entities`,
+    MANAGEMENT: `${API_URL}/users/entities`,
+  },
+
+  // Ente Federado
+  ENTITY: {
+    BASE: `${API_URL}/entity`,
+    PROFILE: `${API_URL}/entity/profile`,
   },
   
   // Editais

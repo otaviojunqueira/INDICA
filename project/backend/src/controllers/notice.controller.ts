@@ -138,7 +138,7 @@ export const noticeController = {
       }
 
       // Verificar se o usuário tem permissão (admin)
-    if (req.user.role !== 'admin') {
+      if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Acesso negado' });
       }
 
@@ -146,7 +146,7 @@ export const noticeController = {
         title,
         description,
         entityId,
-      cityId,
+        cityId,
         startDate,
         endDate,
         totalAmount,
@@ -155,21 +155,28 @@ export const noticeController = {
         categories,
         requirements,
         documents,
-        evaluationCriteria
+        evaluationCriteria,
+        // Novos campos do modelo MinC
+        quotas,
+        accessibility,
+        stages,
+        appealPeriod,
+        habilitationDocuments,
+        budget
       } = req.body;
     
-    // Verificar se a entidade existe
-    const entity = await Entity.findById(entityId);
-    if (!entity) {
-      return res.status(400).json({ message: 'Entidade não encontrada' });
-    }
+      // Verificar se a entidade existe
+      const entity = await Entity.findById(entityId);
+      if (!entity) {
+        return res.status(400).json({ message: 'Entidade não encontrada' });
+      }
 
       // Criar o novo edital
       const notice = new Notice({
         title,
         description,
         entityId,
-      cityId,
+        cityId,
         startDate,
         endDate,
         totalAmount,
@@ -178,7 +185,30 @@ export const noticeController = {
         categories: categories || [],
         requirements: requirements || [],
         documents: documents || [],
-        evaluationCriteria: evaluationCriteria || []
+        evaluationCriteria: evaluationCriteria || [],
+        // Novos campos do modelo MinC
+        quotas: quotas || {
+          blackQuota: 0,
+          indigenousQuota: 0,
+          disabilityQuota: 0
+        },
+        accessibility: accessibility || {
+          physical: [],
+          communicational: [],
+          attitudinal: []
+        },
+        stages: stages || [],
+        appealPeriod: appealPeriod || {
+          selectionAppealDays: 3,
+          habilitationAppealDays: 3
+        },
+        habilitationDocuments: habilitationDocuments || [],
+        budget: budget || {
+          totalAmount: totalAmount,
+          maxValue: maxApplicationValue,
+          minValue: minApplicationValue,
+          allowedExpenses: []
+        }
       });
 
       await notice.save();
@@ -186,7 +216,7 @@ export const noticeController = {
       res.status(201).json({
         message: 'Edital criado com sucesso',
         notice
-    });
+      });
   }),
 
   // Atualizar edital (apenas admin)

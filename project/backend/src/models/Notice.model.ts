@@ -19,6 +19,37 @@ export interface INotice extends Document {
     weight: number;
     description: string;
   }>;
+  quotas: {
+    blackQuota: number;
+    indigenousQuota: number;
+    disabilityQuota: number;
+  };
+  accessibility: {
+    physical: string[];
+    communicational: string[];
+    attitudinal: string[];
+  };
+  stages: Array<{
+    name: string;
+    startDate: Date;
+    endDate: Date;
+    description: string;
+  }>;
+  appealPeriod: {
+    selectionAppealDays: number;
+    habilitationAppealDays: number;
+  };
+  habilitationDocuments: Array<{
+    name: string;
+    description: string;
+    required: boolean;
+  }>;
+  budget: {
+    totalAmount: number;
+    maxValue: number;
+    minValue: number;
+    allowedExpenses: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,7 +131,110 @@ const NoticeSchema = new Schema<INotice>(
         type: String,
         required: true
       }
-    }]
+    }],
+    quotas: {
+      blackQuota: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+      },
+      indigenousQuota: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+      },
+      disabilityQuota: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+      }
+    },
+    accessibility: {
+      physical: [{
+        type: String,
+        trim: true
+      }],
+      communicational: [{
+        type: String,
+        trim: true
+      }],
+      attitudinal: [{
+        type: String,
+        trim: true
+      }]
+    },
+    stages: [{
+      name: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      startDate: {
+        type: Date,
+        required: true
+      },
+      endDate: {
+        type: Date,
+        required: true
+      },
+      description: {
+        type: String,
+        required: true
+      }
+    }],
+    appealPeriod: {
+      selectionAppealDays: {
+        type: Number,
+        required: true,
+        min: 3,
+        default: 3
+      },
+      habilitationAppealDays: {
+        type: Number,
+        required: true,
+        min: 3,
+        default: 3
+      }
+    },
+    habilitationDocuments: [{
+      name: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      description: {
+        type: String,
+        required: true
+      },
+      required: {
+        type: Boolean,
+        default: true
+      }
+    }],
+    budget: {
+      totalAmount: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      maxValue: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      minValue: {
+        type: Number,
+        required: true,
+        min: 0
+      },
+      allowedExpenses: [{
+        type: String,
+        trim: true
+      }]
+    }
   },
   {
     timestamps: true

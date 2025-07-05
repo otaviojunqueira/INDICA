@@ -43,6 +43,12 @@ interface Notification {
   type: string;
 }
 
+// Lista de emails permitidos para super admins
+const SUPER_ADMIN_EMAILS = [
+  'admin1@indica.com.br',
+  'admin2@indica.com.br'
+];
+
 // Esta é a página principal do Dashboard que exibirá conteúdo diferente baseado no papel do usuário
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -107,6 +113,17 @@ const Dashboard: React.FC = () => {
   console.log('Tipo de usuário:', typeof user);
   console.log('Propriedades do usuário:', user ? Object.keys(user) : 'Sem usuário');
   console.groupEnd();
+
+  // Verificar se o usuário é um super admin
+  const isSuperAdmin = user?.role === 'admin' && user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
+
+  // Redirecionar super admin para a página de gerenciamento de entidades
+  useEffect(() => {
+    if (isAuthenticated && isSuperAdmin) {
+      console.log('Dashboard: Redirecionando super admin para gerenciamento de entidades');
+      navigate('/admin/entities');
+    }
+  }, [isAuthenticated, isSuperAdmin, navigate]);
 
   // Se estiver carregando, mostrar indicador de progresso
   if (isLoading) {

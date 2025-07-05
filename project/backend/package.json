@@ -9,7 +9,12 @@
     "build": "tsc",
     "test": "jest",
     "db:test": "ts-node src/utils/db-test.ts",
-    "seed": "ts-node src/utils/seed.ts"
+    "seed": "ts-node src/utils/seed.ts",
+    "create-super-admins": "ts-node src/scripts/create-super-admins.ts",
+    "check-admins": "ts-node src/scripts/check-admin-users.ts",
+    "test-login": "ts-node src/scripts/test-login.ts",
+    "update-admins": "ts-node src/scripts/update-admin-credentials.ts",
+    "force-update-passwords": "ts-node src/scripts/force-update-passwords.ts"
   },
   "keywords": [
     "cultura",
@@ -20,6 +25,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

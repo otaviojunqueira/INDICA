@@ -2,7 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IEvaluator extends Document {
   userId: mongoose.Types.ObjectId;
-  specialties: string[];
+  entityId: mongoose.Types.ObjectId; // Entidade federada que cadastrou o parecerista
+  culturalSector: string; // Setor cultural específico
+  specialties: string[]; // Especialidades dentro do setor
   biography: string;
   education: string;
   experience: string;
@@ -16,6 +18,28 @@ const EvaluatorSchema = new Schema<IEvaluator>({
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  entityId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Entity',
+    required: true
+  },
+  culturalSector: {
+    type: String,
+    required: true,
+    enum: [
+      'Artes Visuais',
+      'Audiovisual',
+      'Circo',
+      'Dança',
+      'Literatura',
+      'Música',
+      'Teatro',
+      'Patrimônio Cultural',
+      'Cultura Popular',
+      'Artesanato',
+      'Outros'
+    ]
   },
   specialties: {
     type: [String],

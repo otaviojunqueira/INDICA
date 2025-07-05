@@ -6,7 +6,7 @@ export interface User {
   profileId?: string;
 }
 
-export type UserRole = 'admin' | 'agent' | 'evaluator';
+export type UserRole = 'admin' | 'agent' | 'evaluator' | 'entity';
 
 export interface IAddress {
   street: string;

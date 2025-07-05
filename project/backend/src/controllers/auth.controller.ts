@@ -4,6 +4,7 @@ import { validationResult } from 'express-validator';
 import { User } from '../models';
 import { handleAsync } from '../utils/errorHandler';
 import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
 
 // Carrega as variáveis de ambiente
 dotenv.config();
@@ -34,7 +35,7 @@ export const authController = {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { cpfCnpj, name, email, password, phone, role = 'agent', entityId, cityId } = req.body;
+      const { cpfCnpj, name, email, password, phone, role, entityId, cityId } = req.body;
       console.log('Dados extraídos da requisição:', { cpfCnpj, name, email, phone, role, entityId, cityId });
 
       // Verificar se o usuário já existe
@@ -55,7 +56,7 @@ export const authController = {
       console.log('CPF/CNPJ limpo:', cleanCpfCnpj);
       
       const user = new User({
-        cpfCnpj: cleanCpfCnpj, // Usar o CPF/CNPJ limpo
+        cpfCnpj: cpfCnpj, // Manter o formato original
         name,
         email,
         password,
@@ -97,39 +98,60 @@ export const authController = {
   // Login de usuário
   login: handleAsync(async (req: Request, res: Response) => {
     const { cpfCnpj, password } = req.body;
-
-    // Encontrar o usuário
-    const user = await User.findOne({ cpfCnpj });
-    if (!user) {
-      return res.status(401).json({ message: 'CPF/CNPJ não encontrado no sistema' });
-    }
-
-    // Verificar se o usuário está ativo
-    if (!user.isActive) {
-      return res.status(401).json({ message: 'Usuário está desativado. Entre em contato com o administrador.' });
-    }
-
-    // Verificar a senha
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Senha incorreta' });
-    }
-
-    // Gerar token JWT
-    const token = generateToken(user);
-
-    res.json({
-      message: 'Login realizado com sucesso',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        entityId: user.entityId,
-        cityId: user.cityId
+    
+    console.log('Tentativa de login com CPF/CNPJ:', cpfCnpj);
+    
+    try {
+      // Buscar o usuário pelo CPF/CNPJ exato
+      const user = await User.findOne({ cpfCnpj });
+      
+      if (!user) {
+        console.log('Usuário não encontrado');
+        return res.status(401).json({ message: 'CPF/CNPJ ou senha incorretos' });
       }
-    });
+      
+      console.log('Usuário encontrado:', user.email);
+      
+      // Verificar se o usuário está ativo
+      if (!user.isActive) {
+        console.log('Usuário desativado');
+        return res.status(401).json({ message: 'Usuário está desativado. Entre em contato com o administrador.' });
+      }
+      
+      // Verificar a senha usando bcrypt diretamente
+      const isMatch = await bcrypt.compare(password, user.password);
+      console.log('Senha correta:', isMatch ? 'Sim' : 'Não');
+      
+      if (!isMatch) {
+        console.log('Senha incorreta');
+        return res.status(401).json({ message: 'CPF/CNPJ ou senha incorretos' });
+      }
+      
+      // Gerar token JWT
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+      
+      console.log('Login bem-sucedido para:', user.email);
+      
+      res.json({
+        message: 'Login realizado com sucesso',
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          entityId: user.entityId,
+          cityId: user.cityId
+        }
+      });
+    } catch (error) {
+      console.error('Erro durante o login:', error);
+      res.status(500).json({ message: 'Erro interno do servidor' });
+    }
   }),
 
   // Obter dados do usuário atual

@@ -15,7 +15,7 @@ interface RegisterForm {
   phone: string;
   password: string;
   confirmPassword: string;
-  role: 'agent' | 'admin';
+  role: 'agent' | 'entity';
   terms: boolean;
   cityId: string;
   
@@ -217,12 +217,12 @@ const Register: React.FC = () => {
                 </label>
                 
                 <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                  watchRole === 'admin' ? 'border-purple-600 bg-purple-50' : 'border-gray-300 hover:border-gray-400'
+                  watchRole === 'entity' ? 'border-purple-600 bg-purple-50' : 'border-gray-300 hover:border-gray-400'
                 }`}>
                   <input
                     {...register('role', { required: 'Selecione o tipo de usuário' })}
                     type="radio"
-                    value="admin"
+                    value="entity"
                     className="sr-only"
                   />
                   <Building className="w-6 h-6 text-purple-600 mr-3" />
@@ -278,7 +278,7 @@ const Register: React.FC = () => {
               </div>
             </div>
 
-            {watchRole === 'admin' && (
+            {watchRole === 'entity' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="responsiblePerson" className="block text-sm font-medium text-gray-700 mb-2">

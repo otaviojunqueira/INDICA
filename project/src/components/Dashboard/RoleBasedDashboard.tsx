@@ -30,13 +30,14 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import DescriptionIcon from '@mui/icons-material/Description';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { ArrowForward, PersonAdd, Assessment, Settings, Add, Business as BusinessIcon } from '@mui/icons-material';
 import { UserRole } from '../../types';
 import { mockNotices, mockApplications, culturalGroup } from '../../mocks/data';
 import { Notice, Application, CulturalGroup } from '../../types';
 
 interface RoleBasedDashboardProps {
-  role: UserRole;
-  userName: string;
+  role?: UserRole;
+  userName?: string;
 }
 
 // Função para retornar a cor do status
@@ -151,7 +152,7 @@ const RoleBasedDashboard: React.FC<RoleBasedDashboardProps> = ({ role, userName 
     return renderErrorMessage('Papel do usuário não definido');
   }
 
-  if (!['admin', 'agent', 'evaluator'].includes(role)) {
+  if (!['admin', 'agent', 'evaluator', 'entity'].includes(role)) {
     return renderErrorMessage(`Tipo de usuário não reconhecido: ${role}`);
   }
 
@@ -509,7 +510,7 @@ const RoleBasedDashboard: React.FC<RoleBasedDashboardProps> = ({ role, userName 
                             <LinearProgress 
                               variant="determinate" 
                               value={Math.floor(Math.random() * 80) + 20} 
-                              sx={{ height: 6, borderRadius: 3 }}
+                              sx={{ height: 6, mt: 0.5, borderRadius: 3 }}
                             />
                           </Box>
                         </Box>
@@ -1674,17 +1675,203 @@ const RoleBasedDashboard: React.FC<RoleBasedDashboardProps> = ({ role, userName 
     );
   };
 
-  // Renderizar dashboard específico para cada tipo de usuário
-  switch (role) {
-    case 'admin':
-      return <AdminDashboard />;
-    case 'agent':
-      return <AgentDashboard />;
-    case 'evaluator':
-      return <EvaluatorDashboard />;
-    default:
-      return renderErrorMessage(`Papel do usuário não suportado: ${role}`);
+  // Dashboard para ente federado
+  const EntityDashboard = () => {
+    // Obter horário do dia para saudação personalizada
+    const currentHour = new Date().getHours();
+    let greeting;
+    
+    if (currentHour < 12) {
+      greeting = "Bom dia";
+    } else if (currentHour < 18) {
+      greeting = "Boa tarde";
+    } else {
+      greeting = "Boa noite";
+    }
+
+    return (
+      <Box sx={{ animation: 'fadeIn 0.5s ease-in-out' }}>
+        {/* Cabeçalho personalizado */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 4,
+          p: 3,
+          borderRadius: 2,
+          backgroundImage: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
+          color: 'white'
+        }}>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
+              {greeting}, {userName}!
+            </Typography>
+            <Typography variant="subtitle1">
+              Gerencie seus editais e pareceristas.
+            </Typography>
+          </Box>
+          <Avatar 
+            sx={{ width: 64, height: 64, bgcolor: 'primary.light', border: '3px solid white' }}
+            alt="Ente Federado"
+          >
+            <BusinessIcon sx={{ fontSize: 32 }} />
+          </Avatar>
+        </Box>
+      
+        {/* Cartões com estatísticas e acesso rápido */}
+        <Grid container spacing={3}>
+          {/* Editais Ativos */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%', minHeight: 200 }}>
+              <CardHeader
+                title="Editais Ativos"
+                titleTypographyProps={{ variant: 'h6' }}
+                action={
+                  <IconButton 
+                    color="primary"
+                    onClick={() => navigate('/notices')}
+                  >
+                    <ArrowForward />
+                  </IconButton>
+                }
+              />
+              <CardContent>
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="h3" color="primary" gutterBottom>
+                    {openNotices.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    editais em andamento
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Pareceristas */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%', minHeight: 200 }}>
+              <CardHeader
+                title="Pareceristas"
+                titleTypographyProps={{ variant: 'h6' }}
+                action={
+                  <IconButton 
+                    color="primary"
+                    onClick={() => navigate('/admin/evaluators')}
+                  >
+                    <ArrowForward />
+                  </IconButton>
+                }
+              />
+              <CardContent>
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="h3" color="primary" gutterBottom>
+                    15
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    pareceristas cadastrados
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Inscrições */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ height: '100%', minHeight: 200 }}>
+              <CardHeader
+                title="Inscrições"
+                titleTypographyProps={{ variant: 'h6' }}
+                action={
+                  <IconButton 
+                    color="primary"
+                    onClick={() => navigate('/applications')}
+                  >
+                    <ArrowForward />
+                  </IconButton>
+                }
+              />
+              <CardContent>
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="h3" color="primary" gutterBottom>
+                    42
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    inscrições recebidas
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Ações Rápidas */}
+          <Grid item xs={12}>
+            <Card>
+              <CardHeader
+                title="Ações Rápidas"
+                titleTypographyProps={{ variant: 'h6' }}
+              />
+              <CardContent>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Add />}
+                      onClick={() => navigate('/admin/notices/create')}
+                    >
+                      Novo Edital
+                    </Button>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<PersonAdd />}
+                      onClick={() => navigate('/admin/evaluators/new')}
+                    >
+                      Novo Parecerista
+                    </Button>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Assessment />}
+                      onClick={() => navigate('/admin/reports')}
+                    >
+                      Relatórios
+                    </Button>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Settings />}
+                      onClick={() => navigate('/profile')}
+                    >
+                      Configurações
+                    </Button>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  };
+
+  // Renderização condicional baseada no papel do usuário
+  if (role === 'admin') {
+    return <AdminDashboard />;
+  } else if (role === 'evaluator') {
+    return <EvaluatorDashboard />;
+  } else if (role === 'entity') {
+    return <EntityDashboard />;
+  } else {
+    return <AgentDashboard />;
   }
-}; 
+};
 
 export default RoleBasedDashboard;

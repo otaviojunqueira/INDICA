@@ -1,4 +1,4 @@
-import api from '../config/axios';
+import { api } from './api';
 
 export interface Evaluator {
   id: string;
@@ -7,25 +7,47 @@ export interface Evaluator {
     name: string;
     email: string;
   };
+  entityId: {
+    id: string;
+    name: string;
+  };
+  culturalSector: string;
   specialties: string[];
   biography: string;
   education: string;
   experience: string;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface EvaluatorInput {
-  userId: string;
+export interface CreateEvaluatorData {
+  name: string;
+  email: string;
+  culturalSector: string;
   specialties: string[];
   biography: string;
   education: string;
   experience: string;
 }
 
+export interface UpdateEvaluatorData {
+  specialties?: string[];
+  biography?: string;
+  education?: string;
+  experience?: string;
+  isActive?: boolean;
+}
+
 const evaluatorService = {
   // Listar todos os pareceristas
-  getAllEvaluators: async (params?: { query?: string; specialty?: string; isActive?: boolean }) => {
-    const response = await api.get('/evaluators', { params });
+  listEvaluators: async (filters?: {
+    culturalSector?: string;
+    specialty?: string;
+    active?: boolean;
+    query?: string;
+  }) => {
+    const response = await api.get('/evaluators', { params: filters });
     return response.data;
   },
 
@@ -35,33 +57,21 @@ const evaluatorService = {
     return response.data;
   },
 
-  // Listar pareceristas por especialidade
-  getEvaluatorsBySpecialty: async (specialty: string) => {
-    const response = await api.get(`/evaluators/specialty/${specialty}`);
+  // Criar novo parecerista
+  createEvaluator: async (data: CreateEvaluatorData) => {
+    const response = await api.post('/evaluators', data);
     return response.data;
   },
 
-  // Criar um novo parecerista
-  createEvaluator: async (evaluatorData: EvaluatorInput) => {
-    const response = await api.post('/evaluators', evaluatorData);
+  // Atualizar parecerista
+  updateEvaluator: async (id: string, data: UpdateEvaluatorData) => {
+    const response = await api.put(`/evaluators/${id}`, data);
     return response.data;
   },
 
-  // Atualizar um parecerista existente
-  updateEvaluator: async (id: string, evaluatorData: Partial<EvaluatorInput>) => {
-    const response = await api.put(`/evaluators/${id}`, evaluatorData);
-    return response.data;
-  },
-
-  // Atualizar status de um parecerista (ativar/desativar)
-  updateEvaluatorStatus: async (id: string, isActive: boolean) => {
+  // Ativar/desativar parecerista
+  toggleEvaluatorStatus: async (id: string, isActive: boolean) => {
     const response = await api.patch(`/evaluators/${id}/status`, { isActive });
-    return response.data;
-  },
-
-  // Excluir um parecerista
-  deleteEvaluator: async (id: string) => {
-    const response = await api.delete(`/evaluators/${id}`);
     return response.data;
   }
 };

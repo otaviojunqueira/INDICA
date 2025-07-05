@@ -30,7 +30,7 @@ const isValidUser = (user: unknown): user is User => {
   return typeof userObj.id === 'string' && 
     typeof userObj.name === 'string' && 
     typeof userObj.email === 'string' && 
-    (userObj.role === 'admin' || userObj.role === 'agent' || userObj.role === 'evaluator');
+    (userObj.role === 'admin' || userObj.role === 'agent' || userObj.role === 'evaluator' || userObj.role === 'entity');
 };
 
 export const useAuthStore = create<AuthState>((set, get) => {

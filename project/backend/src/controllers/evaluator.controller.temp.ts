@@ -15,17 +15,19 @@ const generateRandomPassword = () => {
 export const evaluatorController = {
   // Listar pareceristas (filtrado por entidade para admins)
   listEvaluators: handleAsync(async (req: Request, res: Response) => {
-    const { entityId, specialty, active, query } = req.query;
+    // Verificar se o usuário está autenticado e tem permissão
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+
+    const { culturalSector, specialty, active, query } = req.query;
     
     // Construir filtro de busca
     const filter: any = {};
     
     // Se for admin, filtrar por entidade (se especificada)
     if (req.user.role === 'admin') {
-      if (entityId) {
-        filter.entityId = new mongoose.Types.ObjectId(entityId.toString());
-      } else if (req.user.entityId) {
-        // Se não especificou entidade, filtrar pela entidade do admin
+      if (req.user.entityId) {
         filter.entityId = req.user.entityId;
       }
     } else {
@@ -36,6 +38,12 @@ export const evaluatorController = {
       filter.entityId = req.user.entityId;
     }
     
+    // Filtrar por setor cultural
+    if (culturalSector) {
+      filter.culturalSector = culturalSector;
+    }
+
+    // Filtrar por especialidade
     if (specialty) {
       filter.specialties = { $in: [specialty.toString()] };
     }
@@ -64,6 +72,11 @@ export const evaluatorController = {
   
   // Obter parecerista por ID
   getEvaluatorById: handleAsync(async (req: Request, res: Response) => {
+    // Verificar se o usuário está autenticado e tem permissão
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+
     const evaluator = await Evaluator.findById(req.params.id)
       .populate('userId', 'name email phone')
       .populate('entityId', 'name');
@@ -86,6 +99,11 @@ export const evaluatorController = {
   
   // Criar um novo parecerista (apenas admin)
   createEvaluator: handleAsync(async (req: Request, res: Response) => {
+    // Verificar se o usuário está autenticado e tem permissão
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+
     // Validar os dados da requisição
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -168,6 +186,11 @@ export const evaluatorController = {
   
   // Atualizar parecerista (apenas admin ou o próprio parecerista)
   updateEvaluator: handleAsync(async (req: Request, res: Response) => {
+    // Verificar se o usuário está autenticado e tem permissão
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+
     // Validar os dados da requisição
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -195,6 +218,7 @@ export const evaluatorController = {
     if (!isAdmin) {
       delete req.body.entityId;
       delete req.body.isActive;
+      delete req.body.culturalSector; // Apenas admin pode mudar o setor cultural
     }
     
     // Atualizar os campos permitidos
@@ -215,6 +239,11 @@ export const evaluatorController = {
   
   // Desativar/reativar parecerista (apenas admin)
   toggleEvaluatorStatus: handleAsync(async (req: Request, res: Response) => {
+    // Verificar se o usuário está autenticado e tem permissão
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+
     // Verificar se o usuário tem permissão (admin)
     if (req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Acesso negado' });
@@ -242,225 +271,5 @@ export const evaluatorController = {
       message: isActive ? 'Parecerista ativado com sucesso' : 'Parecerista desativado com sucesso',
       evaluator
     });
-  }),
-
-  // Listar todos os pareceristas
-  getAllEvaluators: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { query, specialty, isActive } = req.query;
-      
-      const filter: any = {};
-      
-      // Filtrar por status (ativo/inativo)
-      if (isActive !== undefined) {
-        filter.isActive = isActive === 'true';
-      }
-      
-      // Filtrar por especialidade
-      if (specialty) {
-        filter.specialties = { $in: [specialty.toString()] };
-      }
-      
-      // Buscar pareceristas
-      let evaluators = await Evaluator.find(filter)
-        .populate('userId', 'name email')
-        .sort({ createdAt: -1 });
-      
-      // Filtrar por nome ou email (pós-consulta)
-      if (query) {
-        const queryStr = query.toString().toLowerCase();
-        evaluators = evaluators.filter(evaluator => 
-          (evaluator.userId as any)?.name?.toLowerCase().includes(queryStr) ||
-          (evaluator.userId as any)?.email?.toLowerCase().includes(queryStr)
-        );
-      }
-      
-      res.status(200).json(evaluators);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-
-  // Obter um parecerista por ID
-  getEvaluatorByIdSequelize: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const evaluator = await Evaluator.findById(req.params.id)
-        .populate('userId', 'name email');
-      
-      if (!evaluator) {
-        res.status(404).json({ message: 'Parecerista não encontrado' });
-        return;
-      }
-      
-      res.status(200).json(evaluator);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-
-  // Criar um novo parecerista
-  createEvaluatorSequelize: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { userId, specialties, biography, education, experience } = req.body;
-      
-      // Verificar se o usuário existe
-      const user = await User.findById(userId);
-      
-      if (!user) {
-        res.status(404).json({ message: 'Usuário não encontrado' });
-        return;
-      }
-      
-      // Verificar se o usuário já é um parecerista
-      const existingEvaluator = await Evaluator.findOne({ userId });
-      
-      if (existingEvaluator) {
-        res.status(400).json({ message: 'Este usuário já está cadastrado como parecerista' });
-        return;
-      }
-      
-      // Atualizar o papel do usuário para 'evaluator'
-      user.role = 'evaluator';
-      await user.save();
-      
-      // Criar o parecerista
-      const newEvaluator = new Evaluator({
-        userId,
-        specialties,
-        biography,
-        education,
-        experience,
-        isActive: true
-      });
-      
-      await newEvaluator.save();
-      
-      // Retornar o parecerista criado com dados do usuário
-      const evaluatorWithUser = await Evaluator.findById(newEvaluator._id)
-        .populate('userId', 'id name email');
-      
-      res.status(201).json(evaluatorWithUser);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-
-  // Atualizar um parecerista
-  updateEvaluatorSequelize: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { specialties, biography, education, experience } = req.body;
-      
-      // Verificar se o parecerista existe
-      const evaluator = await Evaluator.findById(req.params.id);
-      
-      if (!evaluator) {
-        res.status(404).json({ message: 'Parecerista não encontrado' });
-        return;
-      }
-      
-      // Atualizar o parecerista
-      if (specialties) evaluator.specialties = specialties;
-      if (biography) evaluator.biography = biography;
-      if (education) evaluator.education = education;
-      if (experience) evaluator.experience = experience;
-      
-      await evaluator.save();
-      
-      // Retornar o parecerista atualizado com dados do usuário
-      const updatedEvaluator = await Evaluator.findById(evaluator._id)
-        .populate('userId', 'id name email');
-      
-      res.status(200).json(updatedEvaluator);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-
-  // Alterar o status de um parecerista (ativar/desativar)
-  updateEvaluatorStatus: handleAsync(async (req: Request, res: Response): Promise<void> => {
-    const { isActive } = req.body;
-    
-    if (isActive === undefined) {
-      res.status(400).json({ message: 'O campo isActive é obrigatório' });
-      return;
-    }
-    
-    // Verificar se o parecerista existe
-    const evaluator = await Evaluator.findById(req.params.id);
-    
-    if (!evaluator) {
-      res.status(404).json({ message: 'Parecerista não encontrado' });
-      return;
-    }
-    
-    // Atualizar o status do parecerista
-    evaluator.isActive = isActive;
-    await evaluator.save();
-    
-    res.status(200).json({ 
-      message: `Parecerista ${isActive ? 'ativado' : 'desativado'} com sucesso`,
-      evaluator
-    });
-  }),
-
-  // Excluir um parecerista
-  deleteEvaluator: handleAsync(async (req: Request, res: Response): Promise<void> => {
-    try {
-      // Verificar se o parecerista existe
-      const evaluator = await Evaluator.findById(req.params.id);
-      
-      if (!evaluator) {
-        res.status(404).json({ message: 'Parecerista não encontrado' });
-        return;
-      }
-      
-      // Verificar se o parecerista tem avaliações associadas
-      // Nota: Este código depende da existência de um modelo Evaluation com uma relação com Evaluator
-      // const evaluationCount = await Evaluation.countDocuments({ evaluatorId: req.params.id });
-      
-      // if (evaluationCount > 0) {
-      //   res.status(400).json({ 
-      //     message: 'Este parecerista não pode ser excluído pois possui avaliações associadas',
-      //     evaluationCount
-      //   });
-      //   return;
-      // }
-      
-      // Obter o ID do usuário associado
-      const userId = evaluator.userId;
-      
-      // Excluir o parecerista
-      await Evaluator.deleteOne({ _id: evaluator._id });
-      
-      // Atualizar o papel do usuário para 'agent' se não for admin
-      const user = await User.findById(userId);
-      if (user && user.role !== 'admin') {
-        user.role = 'agent';
-        await user.save();
-      }
-      
-      res.status(200).json({ message: 'Parecerista excluído com sucesso' });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }),
-  
-  // Listar pareceristas por especialidade
-  listEvaluatorsBySpecialty: handleAsync(async (req: Request, res: Response) => {
-    const { specialty } = req.params;
-    
-    if (!specialty) {
-      res.status(400).json({ message: 'Especialidade é obrigatória' });
-      return;
-    }
-    
-    const evaluators = await Evaluator.find({
-      specialties: { $in: [specialty] },
-      isActive: true
-    })
-    .populate('userId', 'id name email')
-    .sort({ createdAt: -1 });
-    
-    res.status(200).json(evaluators);
   })
 }; 

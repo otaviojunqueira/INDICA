@@ -56,7 +56,7 @@ interface EvaluationData {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Criar instância do axios com configuração base
-const api: AxiosInstance = axios.create({
+export const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',

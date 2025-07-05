@@ -1,4 +1,4 @@
-import api from '../config/axios';
+import { api } from './api';
 
 export interface Notice {
   id: string;
@@ -24,6 +24,28 @@ export interface Notice {
   documents: string[];
   evaluationCriteria: EvaluationCriteria[];
   status: 'draft' | 'published' | 'evaluation' | 'result' | 'closed' | 'canceled';
+  quotas: {
+    blackQuota: number;
+    indigenousQuota: number;
+    disabilityQuota: number;
+  };
+  accessibility: {
+    physical: string[];
+    communicational: string[];
+    attitudinal: string[];
+  };
+  stages: Stage[];
+  appealPeriod: {
+    selectionAppealDays: number;
+    habilitationAppealDays: number;
+  };
+  habilitationDocuments: HabilitationDocument[];
+  budget: {
+    totalAmount: number;
+    maxValue: number;
+    minValue: number;
+    allowedExpenses: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
   isFromUserCity?: boolean;
@@ -33,6 +55,19 @@ export interface EvaluationCriteria {
   name: string;
   weight: number;
   description: string;
+}
+
+export interface Stage {
+  name: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  description: string;
+}
+
+export interface HabilitationDocument {
+  name: string;
+  description: string;
+  required: boolean;
 }
 
 export interface NoticeInput {
@@ -49,6 +84,28 @@ export interface NoticeInput {
   requirements: string[];
   documents: string[];
   evaluationCriteria: EvaluationCriteria[];
+  quotas: {
+    blackQuota: number;
+    indigenousQuota: number;
+    disabilityQuota: number;
+  };
+  accessibility: {
+    physical: string[];
+    communicational: string[];
+    attitudinal: string[];
+  };
+  stages: Stage[];
+  appealPeriod: {
+    selectionAppealDays: number;
+    habilitationAppealDays: number;
+  };
+  habilitationDocuments: HabilitationDocument[];
+  budget: {
+    totalAmount: number;
+    maxValue: number;
+    minValue: number;
+    allowedExpenses: string[];
+  };
 }
 
 export interface NoticeQueryParams {

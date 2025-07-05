@@ -7,7 +7,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   phone: string;
-  role: 'admin' | 'agent' | 'evaluator';
+  role: 'admin' | 'agent' | 'evaluator' | 'entity';
   entityId?: mongoose.Types.ObjectId;
   cityId?: mongoose.Types.ObjectId;
   isActive: boolean;
@@ -103,7 +103,7 @@ const UserSchema = new Schema<IUser>(
     role: {
       type: String,
       enum: {
-        values: ['admin', 'agent', 'evaluator'],
+        values: ['admin', 'agent', 'evaluator', 'entity'],
         message: '{VALUE} não é um papel válido'
       },
       default: 'agent'
@@ -142,7 +142,16 @@ UserSchema.pre('save', async function(next) {
 
 // Método para verificar a senha
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  try {
+    console.log('Comparando senha:', candidatePassword);
+    console.log('Com senha hash:', this.password.substring(0, 20) + '...');
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    console.log('Resultado da comparação:', isMatch);
+    return isMatch;
+  } catch (error) {
+    console.error('Erro ao comparar senha:', error);
+    return false;
+  }
 };
 
 export default mongoose.model<IUser>('User', UserSchema); 

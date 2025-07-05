@@ -1,222 +1,307 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Box,
-  CssBaseline,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
+  Container,
   Toolbar,
   Typography,
+  Button,
+  IconButton,
   Menu,
   MenuItem,
   Avatar,
+  Badge,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Divider,
+  useMediaQuery,
   useTheme,
-  useMediaQuery
+  Tooltip
 } from '@mui/material';
 import {
   Menu as MenuIcon,
+  Notifications as NotificationsIcon,
+  AccountCircle,
   Dashboard as DashboardIcon,
-  Person as PersonIcon,
-  Group as GroupIcon,
   Description as DescriptionIcon,
-  Info as InfoIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Logout as LogoutIcon
+  Event as EventIcon,
+  Group as GroupIcon,
+  Assessment as AssessmentIcon,
+  Logout as LogoutIcon,
+  Settings as SettingsIcon,
+  Business as BusinessIcon
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
-
-const drawerWidth = 240;
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
+// Lista de emails permitidos para super admins
+const SUPER_ADMIN_EMAILS = [
+  'admin1@indica.com.br',
+  'admin2@indica.com.br'
+];
+
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, logout } = useAuthStore();
-
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Verificar se o usuário é um super admin
+  const isSuperAdmin = user?.role === 'admin' && user?.email && SUPER_ADMIN_EMAILS.includes(user.email);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  // Redirecionar super admin para a página de gerenciamento de entidades
+  useEffect(() => {
+    if (isSuperAdmin && location.pathname === '/dashboard') {
+      navigate('/admin/entities');
+    }
+  }, [isSuperAdmin, location.pathname, navigate]);
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
+  const handleClose = () => {
     setAnchorEl(null);
   };
 
-  const handleSignOut = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate('/login');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Meu Perfil', icon: <PersonIcon />, path: '/profile' },
-    { text: 'Coletivo Cultural', icon: <GroupIcon />, path: '/cultural-group' },
-    { text: 'Editais', icon: <DescriptionIcon />, path: '/notices' },
-    { text: 'Sobre', icon: <InfoIcon />, path: '/about' }
-  ];
+  const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
+    if (
+      event.type === 'keydown' &&
+      ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')
+    ) {
+      return;
+    }
+    setDrawerOpen(open);
+  };
+
+  // Definir itens de menu com base no papel do usuário
+  const getMenuItems = () => {
+    const menuItems = [
+      { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    ];
+
+    // Itens para super admin
+    if (isSuperAdmin) {
+      return [
+        ...menuItems,
+        { text: 'Entes Federados', icon: <BusinessIcon />, path: '/admin/entities' },
+        { text: 'Pareceristas', icon: <GroupIcon />, path: '/admin/evaluators' },
+        { text: 'Criar Edital', icon: <DescriptionIcon />, path: '/admin/create-notice' },
+        { text: 'Relatórios', icon: <AssessmentIcon />, path: '/admin/reports' },
+      ];
+    }
+
+    // Itens para ente federado
+    if (user?.role === 'entity') {
+      return [
+        ...menuItems,
+        { text: 'Pareceristas', icon: <GroupIcon />, path: '/entity/evaluators' },
+        { text: 'Editais', icon: <DescriptionIcon />, path: '/notices' },
+        { text: 'Calendário Cultural', icon: <EventIcon />, path: '/calendar' },
+      ];
+    }
+
+    // Itens para agente cultural
+    if (user?.role === 'agent') {
+      return [
+        ...menuItems,
+        { text: 'Editais', icon: <DescriptionIcon />, path: '/notices' },
+        { text: 'Minhas Inscrições', icon: <DescriptionIcon />, path: '/applications' },
+        { text: 'Calendário Cultural', icon: <EventIcon />, path: '/calendar' },
+      ];
+    }
+
+    // Itens para parecerista
+    if (user?.role === 'evaluator') {
+      return [
+        ...menuItems,
+        { text: 'Projetos para Avaliar', icon: <DescriptionIcon />, path: '/evaluator/projects' },
+        { text: 'Histórico de Avaliações', icon: <AssessmentIcon />, path: '/evaluator/history' },
+      ];
+    }
+
+    return menuItems;
+  };
+
+  const menuItems = getMenuItems();
 
   const drawer = (
-    <Box>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          INDICA
-        </Typography>
-        {isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
-            <ChevronLeftIcon />
-          </IconButton>
-        )}
-      </Toolbar>
+    <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(false)}>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img src="/indica-logo-cut.png" alt="INDICA" style={{ height: 50 }} />
+      </Box>
       <Divider />
       <List>
         {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              onClick={() => {
-                navigate(item.path);
-                if (isMobile) setMobileOpen(false);
-              }}
-              selected={location.pathname === item.path}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
+          <ListItem 
+            button 
+            key={item.text} 
+            component={RouterLink} 
+            to={item.path}
+            selected={location.pathname === item.path}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.text} />
           </ListItem>
         ))}
+      </List>
+      <Divider />
+      <List>
+        <ListItem button onClick={handleLogout}>
+          <ListItemIcon><LogoutIcon /></ListItemIcon>
+          <ListItemText primary="Sair" />
+        </ListItem>
       </List>
     </Box>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` }
-        }}
-      >
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <AppBar position="sticky" color="default" elevation={1} sx={{ backgroundColor: 'white' }}>
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ flexGrow: 1 }} />
-          {user && (
-            <>
-              <IconButton
-                onClick={handleMenuOpen}
-                size="small"
-                sx={{ ml: 2 }}
-                aria-controls={anchorEl ? 'account-menu' : undefined}
-                aria-haspopup="true"
-                aria-expanded={anchorEl ? 'true' : undefined}
-              >
-                <Avatar sx={{ width: 32, height: 32 }}>
-                  {user.name?.charAt(0).toUpperCase()}
-                </Avatar>
+          {isMobile ? (
+            <IconButton
+              edge="start"
+              color="inherit"
+              aria-label="menu"
+              onClick={toggleDrawer(true)}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          ) : null}
+          
+          <RouterLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <img src="/indica-logo-cut.png" alt="INDICA" style={{ height: 40, marginRight: 10 }} />
+          </RouterLink>
+          
+          {!isMobile && (
+            <Box sx={{ display: 'flex', flexGrow: 1, ml: 2 }}>
+              {menuItems.map((item) => (
+                <Button
+                  key={item.text}
+                  component={RouterLink}
+                  to={item.path}
+                  color="inherit"
+                  sx={{ 
+                    mx: 1,
+                    color: location.pathname === item.path ? 'primary.main' : 'text.primary',
+                    fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                  }}
+                >
+                  {item.text}
+                </Button>
+              ))}
+            </Box>
+          )}
+          
+          <Box sx={{ flexGrow: isMobile ? 1 : 0 }} />
+          
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Tooltip title="Notificações">
+              <IconButton color="inherit">
+                <Badge badgeContent={2} color="error">
+                  <NotificationsIcon />
+                </Badge>
               </IconButton>
+            </Tooltip>
+            
+            <Box sx={{ ml: 2 }}>
+              <Tooltip title={user?.name || 'Usuário'}>
+                <IconButton
+                  onClick={handleMenu}
+                  color="inherit"
+                  aria-label="conta do usuário"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                >
+                  <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                    {user?.name?.charAt(0) || <AccountCircle />}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
               <Menu
+                id="menu-appbar"
                 anchorEl={anchorEl}
-                id="account-menu"
-                open={!!anchorEl}
-                onClose={handleMenuClose}
-                onClick={handleMenuClose}
-                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
               >
-                <MenuItem onClick={() => navigate('/profile')}>
+                <Box sx={{ px: 2, py: 1 }}>
+                  <Typography variant="subtitle1">{user?.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
+                </Box>
+                <Divider />
+                <MenuItem component={RouterLink} to="/profile">
                   <ListItemIcon>
-                    <PersonIcon fontSize="small" />
+                    <AccountCircle fontSize="small" />
                   </ListItemIcon>
                   Meu Perfil
                 </MenuItem>
+                <MenuItem component={RouterLink} to="/settings">
+                  <ListItemIcon>
+                    <SettingsIcon fontSize="small" />
+                  </ListItemIcon>
+                  Configurações
+                </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleSignOut}>
+                <MenuItem onClick={handleLogout}>
                   <ListItemIcon>
                     <LogoutIcon fontSize="small" />
                   </ListItemIcon>
                   Sair
                 </MenuItem>
               </Menu>
-            </>
-          )}
+            </Box>
+          </Box>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
       >
-        {/* Drawer móvel */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true // Melhor desempenho em dispositivos móveis
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth
-            }
-          }}
-        >
-          {drawer}
-        </Drawer>
-        {/* Drawer permanente */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth
-            }
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px' // Altura da AppBar
-        }}
-      >
+        {drawer}
+      </Drawer>
+      
+      <Container component="main" sx={{ flexGrow: 1, py: 3 }}>
         {children}
+      </Container>
+      
+      <Box component="footer" sx={{ py: 3, px: 2, mt: 'auto', backgroundColor: 'background.paper' }}>
+        <Container maxWidth="lg">
+          <Typography variant="body2" color="text.secondary" align="center">
+            © {new Date().getFullYear()} INDICA - Sistema de Indicadores Culturais
+          </Typography>
+        </Container>
       </Box>
     </Box>
   );
-}; 
+};
 
 export default MainLayout;

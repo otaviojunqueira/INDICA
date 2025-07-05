@@ -143,7 +143,7 @@ const Notices: React.FC = () => {
         {/* Botão de criar edital (apenas para administradores) */}
         {isAuthenticated && user?.role === 'admin' && (
           <Link
-            to="/notices/create"
+            to="/admin/create-notice"
             className="bg-purple-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-purple-700 transition-colors"
           >
             <Plus size={18} />

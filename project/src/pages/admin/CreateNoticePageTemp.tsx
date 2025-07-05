@@ -2,35 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
+  Paper,
   Typography,
+  Grid,
   TextField,
   Button,
-  Grid,
-  Paper,
+  Box,
+  Divider,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Box,
-  Chip,
-  IconButton,
-  Divider,
   FormHelperText,
   SelectChangeEvent,
   FormControlLabel,
   Checkbox
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import type { Stage, HabilitationDocument, EvaluationCriteria } from '../../services/notice.service';
-import noticeService from '../../services/notice.service';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import ptBR from 'date-fns/locale/pt-BR';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { ptBR } from 'date-fns/locale';
+import noticeService from '../../services/notice.service';
 
 interface Entity {
   _id: string;
   name: string;
+}
+
+interface EvaluationCriteria {
+  name: string;
+  weight: number;
+  description: string;
 }
 
 const CreateNoticePage: React.FC = () => {
@@ -67,12 +70,21 @@ const CreateNoticePage: React.FC = () => {
       communicational: [] as string[],
       attitudinal: [] as string[]
     },
-    stages: [] as Stage[],
+    stages: [] as {
+      name: string;
+      startDate: Date | null;
+      endDate: Date | null;
+      description: string;
+    }[],
     appealPeriod: {
       selectionAppealDays: 3,
       habilitationAppealDays: 3
     },
-    habilitationDocuments: [] as HabilitationDocument[],
+    habilitationDocuments: [] as {
+      name: string;
+      description: string;
+      required: boolean;
+    }[],
     budget: {
       totalAmount: 0,
       maxValue: 0,
@@ -107,7 +119,6 @@ const CreateNoticePage: React.FC = () => {
     const fetchEntities = async () => {
       try {
         // Aqui seria uma chamada à API para buscar entidades
-        // Por enquanto, vamos simular com dados estáticos
         setEntities([
           { _id: '1', name: 'Secretaria de Cultura Municipal' },
           { _id: '2', name: 'Secretaria de Cultura Estadual' },
@@ -188,15 +199,6 @@ const CreateNoticePage: React.FC = () => {
     }
   };
 
-  const handleRemoveCriteria = (index: number) => () => {
-    const newCriteria = [...formData.evaluationCriteria];
-    newCriteria.splice(index, 1);
-    setFormData({
-      ...formData,
-      evaluationCriteria: newCriteria,
-    });
-  };
-
   // Manipuladores para novos campos
   const handleQuotaChange = (field: keyof typeof formData.quotas) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -218,12 +220,9 @@ const CreateNoticePage: React.FC = () => {
     });
   };
 
-  const handleStageChange = (index: number, field: keyof Stage, value: string | Date | null) => {
+  const handleStageChange = (index: number, field: string, value: any) => {
     const newStages = [...formData.stages];
-    newStages[index] = {
-      ...newStages[index],
-      [field]: value
-    };
+    (newStages[index] as any)[field] = value;
     setFormData({
       ...formData,
       stages: newStages
@@ -240,12 +239,9 @@ const CreateNoticePage: React.FC = () => {
     });
   };
 
-  const handleHabilitationDocumentChange = (index: number, field: keyof HabilitationDocument, value: string | boolean) => {
+  const handleHabilitationDocumentChange = (index: number, field: string, value: any) => {
     const newDocs = [...formData.habilitationDocuments];
-    newDocs[index] = {
-      ...newDocs[index],
-      [field]: value
-    };
+    (newDocs[index] as any)[field] = value;
     setFormData({
       ...formData,
       habilitationDocuments: newDocs
@@ -312,39 +308,25 @@ const CreateNoticePage: React.FC = () => {
     if (!formData.totalAmount) {
       errors.totalAmount = 'O valor total é obrigatório';
       isValid = false;
-    } else if (isNaN(Number(formData.totalAmount)) || Number(formData.totalAmount) <= 0) {
-      errors.totalAmount = 'O valor total deve ser um número positivo';
-      isValid = false;
     }
 
     if (!formData.maxApplicationValue) {
       errors.maxApplicationValue = 'O valor máximo por inscrição é obrigatório';
-      isValid = false;
-    } else if (isNaN(Number(formData.maxApplicationValue)) || Number(formData.maxApplicationValue) <= 0) {
-      errors.maxApplicationValue = 'O valor máximo deve ser um número positivo';
       isValid = false;
     }
 
     if (!formData.minApplicationValue) {
       errors.minApplicationValue = 'O valor mínimo por inscrição é obrigatório';
       isValid = false;
-    } else if (isNaN(Number(formData.minApplicationValue)) || Number(formData.minApplicationValue) <= 0) {
-      errors.minApplicationValue = 'O valor mínimo deve ser um número positivo';
-      isValid = false;
-    }
-
-    if (Number(formData.minApplicationValue) > Number(formData.maxApplicationValue)) {
-      errors.minApplicationValue = 'O valor mínimo não pode ser maior que o valor máximo';
-      isValid = false;
     }
 
     if (formData.categories.length === 0) {
-      errors.categories = 'Adicione pelo menos uma categoria';
+      errors.categories = 'Pelo menos uma categoria é obrigatória';
       isValid = false;
     }
 
     if (formData.evaluationCriteria.length === 0) {
-      errors.evaluationCriteria = 'Adicione pelo menos um critério de avaliação';
+      errors.evaluationCriteria = 'Pelo menos um critério de avaliação é obrigatório';
       isValid = false;
     }
 
@@ -377,22 +359,12 @@ const CreateNoticePage: React.FC = () => {
         requirements: formData.requirements,
         documents: formData.documents,
         evaluationCriteria: formData.evaluationCriteria,
-        // Novos campos do modelo MinC
         quotas: formData.quotas,
         accessibility: formData.accessibility,
-        stages: formData.stages.map(stage => ({
-          ...stage,
-          startDate: stage.startDate || new Date(),
-          endDate: stage.endDate || new Date()
-        })),
+        stages: formData.stages,
         appealPeriod: formData.appealPeriod,
         habilitationDocuments: formData.habilitationDocuments,
-        budget: {
-          totalAmount: Number(formData.budget.totalAmount),
-          maxValue: Number(formData.budget.maxValue),
-          minValue: Number(formData.budget.minValue),
-          allowedExpenses: formData.budget.allowedExpenses
-        }
+        budget: formData.budget
       };
 
       await noticeService.create(noticeData);
@@ -463,7 +435,6 @@ const CreateNoticePage: React.FC = () => {
                   name="entityId"
                   value={formData.entityId}
                   onChange={handleSelectChange}
-                  label="Entidade"
                   required
                 >
                   {entities.map((entity) => (
@@ -472,16 +443,10 @@ const CreateNoticePage: React.FC = () => {
                     </MenuItem>
                   ))}
                 </Select>
-                {formErrors.entityId && <FormHelperText>{formErrors.entityId}</FormHelperText>}
+                {formErrors.entityId && (
+                  <FormHelperText>{formErrors.entityId}</FormHelperText>
+                )}
               </FormControl>
-            </Grid>
-
-            {/* Datas e valores */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Período e Valores
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
             </Grid>
 
             <Grid item xs={12} sm={6}>
@@ -516,311 +481,6 @@ const CreateNoticePage: React.FC = () => {
                   }}
                 />
               </LocalizationProvider>
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Valor Total do Edital (R$)"
-                name="totalAmount"
-                type="number"
-                value={formData.totalAmount}
-                onChange={handleInputChange}
-                error={!!formErrors.totalAmount}
-                helperText={formErrors.totalAmount}
-                required
-                inputProps={{ min: 0, step: '0.01' }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Valor Mínimo por Inscrição (R$)"
-                name="minApplicationValue"
-                type="number"
-                value={formData.minApplicationValue}
-                onChange={handleInputChange}
-                error={!!formErrors.minApplicationValue}
-                helperText={formErrors.minApplicationValue}
-                required
-                inputProps={{ min: 0, step: '0.01' }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Valor Máximo por Inscrição (R$)"
-                name="maxApplicationValue"
-                type="number"
-                value={formData.maxApplicationValue}
-                onChange={handleInputChange}
-                error={!!formErrors.maxApplicationValue}
-                helperText={formErrors.maxApplicationValue}
-                required
-                inputProps={{ min: 0, step: '0.01' }}
-              />
-            </Grid>
-
-            {/* Categorias */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Categorias
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Box display="flex" alignItems="center">
-                <TextField
-                  fullWidth
-                  label="Nova Categoria"
-                  name="newCategory"
-                  value={formData.newCategory}
-                  onChange={handleInputChange}
-                  sx={{ mr: 1 }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddItem('categories', 'newCategory')}
-                  startIcon={<AddIcon />}
-                >
-                  Adicionar
-                </Button>
-              </Box>
-              {formErrors.categories && (
-                <FormHelperText error>{formErrors.categories}</FormHelperText>
-              )}
-            </Grid>
-
-            <Grid item xs={12}>
-              <Box display="flex" flexWrap="wrap" gap={1}>
-                {formData.categories.map((category, index) => (
-                  <Chip
-                    key={index}
-                    label={category}
-                    onDelete={handleRemoveItem('categories', index)}
-                    color="primary"
-                    variant="outlined"
-                  />
-                ))}
-              </Box>
-            </Grid>
-
-            {/* Requisitos */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Requisitos
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Box display="flex" alignItems="center">
-                <TextField
-                  fullWidth
-                  label="Novo Requisito"
-                  name="newRequirement"
-                  value={formData.newRequirement}
-                  onChange={handleInputChange}
-                  sx={{ mr: 1 }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddItem('requirements', 'newRequirement')}
-                  startIcon={<AddIcon />}
-                >
-                  Adicionar
-                </Button>
-              </Box>
-            </Grid>
-
-            <Grid item xs={12}>
-              {formData.requirements.length > 0 ? (
-                <Box component="ul" sx={{ pl: 2 }}>
-                  {formData.requirements.map((requirement, index) => (
-                    <Box
-                      component="li"
-                      key={index}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 1,
-                      }}
-                    >
-                      <Typography>{requirement}</Typography>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={handleRemoveItem('requirements', index)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography color="text.secondary">Nenhum requisito adicionado</Typography>
-              )}
-            </Grid>
-
-            {/* Documentos */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Documentos Necessários
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Box display="flex" alignItems="center">
-                <TextField
-                  fullWidth
-                  label="Novo Documento"
-                  name="newDocument"
-                  value={formData.newDocument}
-                  onChange={handleInputChange}
-                  sx={{ mr: 1 }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleAddItem('documents', 'newDocument')}
-                  startIcon={<AddIcon />}
-                >
-                  Adicionar
-                </Button>
-              </Box>
-            </Grid>
-
-            <Grid item xs={12}>
-              {formData.documents.length > 0 ? (
-                <Box component="ul" sx={{ pl: 2 }}>
-                  {formData.documents.map((document, index) => (
-                    <Box
-                      component="li"
-                      key={index}
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 1,
-                      }}
-                    >
-                      <Typography>{document}</Typography>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={handleRemoveItem('documents', index)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography color="text.secondary">Nenhum documento adicionado</Typography>
-              )}
-            </Grid>
-
-            {/* Critérios de Avaliação */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Critérios de Avaliação
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Paper variant="outlined" sx={{ p: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={5}>
-                    <TextField
-                      fullWidth
-                      label="Nome do Critério"
-                      name="name"
-                      value={newCriteria.name}
-                      onChange={handleCriteriaChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <TextField
-                      fullWidth
-                      label="Peso"
-                      name="weight"
-                      type="number"
-                      value={newCriteria.weight}
-                      onChange={handleCriteriaChange}
-                      inputProps={{ min: 1, max: 10 }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={5}>
-                    <TextField
-                      fullWidth
-                      label="Descrição"
-                      name="description"
-                      value={newCriteria.description}
-                      onChange={handleCriteriaChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleAddCriteria}
-                      startIcon={<AddIcon />}
-                      fullWidth
-                    >
-                      Adicionar Critério
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Paper>
-              {formErrors.evaluationCriteria && (
-                <FormHelperText error>{formErrors.evaluationCriteria}</FormHelperText>
-              )}
-            </Grid>
-
-            <Grid item xs={12}>
-              {formData.evaluationCriteria.length > 0 ? (
-                <Grid container spacing={2}>
-                  {formData.evaluationCriteria.map((criteria, index) => (
-                    <Grid item xs={12} key={index}>
-                      <Paper
-                        variant="outlined"
-                        sx={{
-                          p: 2,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Box>
-                          <Typography variant="subtitle1">{criteria.name}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {criteria.description}
-                          </Typography>
-                          <Typography variant="body2" color="primary">
-                            Peso: {criteria.weight}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          color="error"
-                          onClick={handleRemoveCriteria(index)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-              ) : (
-                <Typography color="text.secondary">Nenhum critério adicionado</Typography>
-              )}
             </Grid>
 
             {/* Cotas */}
@@ -1156,5 +816,4 @@ const CreateNoticePage: React.FC = () => {
   );
 };
 
-// Exportação padrão
 export default CreateNoticePage; 
